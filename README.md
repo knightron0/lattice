@@ -9,3 +9,6 @@ rough timeline:
 ...some intermediate steps, then eventually:
 - [ ] transformer
 
+
+task for initial steps: [MNIST dataset](https://www.kaggle.com/competitions/digit-recognizer)
+
