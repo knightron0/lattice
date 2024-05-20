@@ -27,12 +27,17 @@ Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
   return lattice;
 }
 
+float get(Lattice* lattice, int *indices) {
+  int idx = 0;
+
+}
+
 void bhej(Lattice *lattice, char *kahan) {
   if (strcmp(kahan, "cuda") == 0 && strcmp(lattice->kahan, "cpu") == 0) {
     cpu_to_cuda(lattice);
   } else if (strcmp(kahan, "cpu") == 0 && strcmp(lattice->kahan, "cuda") == 0) {
     cuda_to_cpu(lattice);
-  }
+  }  
 }
 
 Lattice* isomerize(Lattice *lattice, int new_ndim, int* new_shapes) {
