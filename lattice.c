@@ -14,7 +14,8 @@ Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
   lattice->ndim = ndim;
 
   lattice->kitna = 1;
-  for (int i = 0; i < ndim; i++) lattice->kitna *= lattice->shapes[i];
+  for (int i = 0; i < ndim; i++)
+    lattice->kitna *= lattice->shapes[i];
 
   lattice->kahan = kahan;
   int mul = 1;
@@ -26,19 +27,15 @@ Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
   return lattice;
 }
 
-
-
-
-
-void bhej(Lattice* lattice, char* kahan) {
-  
+void bhej(Lattice *lattice, char *kahan) {
+  if (strcmp(kahan, "cuda") == 0 && strcmp(lattice->kahan, "cpu") == 0) {
+    cpu_to_cuda(lattice);
+  } else if (strcmp(kahan, "cpu") == 0 && strcmp(lattice->kahan, "cuda") == 0) {
+    cuda_to_cpu(lattice);
+  }
 }
 
 Lattice* isomerize(Lattice *lattice, int new_ndim, int* new_shapes) {
   char *kahan = lattice->kahan;
   return NULL;
 }
-
-
-
-
