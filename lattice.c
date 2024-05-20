@@ -1,34 +1,43 @@
 #include <math.h>
-#include <lattice.h>
-#include <stdlib.h>
-#include <string.h>
+#include "lattice.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
   Lattice *lattice = (Lattice *) malloc(sizeof(Lattice));
+  if (lattice == NULL) {
+    printf("Lattice could not be allocated\n");
+    return NULL;
+  }
   lattice->data = data;
   lattice->shapes = shapes;
   lattice->ndim = ndim;
 
   lattice->kitna = 1;
-  for (int i = 0; i < ndim; i++) lattice->kitna *= lattice->shapes[i];
+  for (int i = 0; i < ndim; i++)
+    lattice->kitna *= lattice->shapes[i];
 
   lattice->kahan = kahan;
   int mul = 1;
+  lattice->stride = malloc(ndim * sizeof(int));
   for (int i = ndim - 1; i >= 0; i--) {
     lattice->stride[i] = mul;
     mul *= lattice->shapes[i];
   }
   return lattice;
-  
 }
 
+float get(Lattice* lattice, int *indices) {
+  int idx = 0;
 
-
-
+}
 
 void bhej(Lattice* lattice, char* kahan) {
-  
+  if (strcmp(kahan, "cuda") == 0 && strcmp(lattice->kahan, "cpu") == 0) {
+    cpu_to_cuda(lattice);
+  } else if (strcmp(kahan, "cpu") == 0 && strcmp(lattice->kahan, "cuda") == 0) {
+    cuda_to_cpu(lattice);
+  }
 }
 
 Lattice* isomerize(Lattice *lattice, int new_ndim, int* new_shapes) {
@@ -124,3 +133,4 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
     return create_tensor(added_data, shapes, ndim, kahan);
   }
 }
+
