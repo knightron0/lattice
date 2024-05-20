@@ -1,8 +1,11 @@
 #include <math.h>
 #include "lattice.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+extern "C" {
 Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
   Lattice *lattice = (Lattice *) malloc(sizeof(Lattice));
   if (lattice == NULL) {
@@ -19,7 +22,7 @@ Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
 
   lattice->kahan = kahan;
   int mul = 1;
-  lattice->stride = malloc(ndim * sizeof(int));
+  lattice->stride = (int*)malloc(ndim * sizeof(int));
   for (int i = ndim - 1; i >= 0; i--) {
     lattice->stride[i] = mul;
     mul *= lattice->shapes[i];
@@ -29,7 +32,10 @@ Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
 
 float get(Lattice* lattice, int *indices) {
   int idx = 0;
-
+  for (int i= 0; i < lattice->ndim; i++) {
+    idx += indices[i] * lattice->stride[i];
+  }
+  return lattice->data[idx];
 }
 
 void bhej(Lattice *lattice, char *kahan) {
@@ -43,4 +49,5 @@ void bhej(Lattice *lattice, char *kahan) {
 Lattice* isomerize(Lattice *lattice, int new_ndim, int* new_shapes) {
   char *kahan = lattice->kahan;
   return NULL;
+}
 }

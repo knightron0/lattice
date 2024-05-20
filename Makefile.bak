@@ -1,0 +1,46 @@
+# CC = gcc
+# NVCC = nvcc
+
+# TARGET = main
+# OBJS = main.o lattice.o utils.o
+
+# all: $(TARGET)
+# $(TARGET): $(OBJS)
+# 	$(NVCC) -o $@ $^
+
+# main.o: main.c lattice.h
+# 	$(NVCC) $(CFLAGS) -c $@
+
+# lattice.o: lattice.c lattice.h utils.h
+# 	$(CC) $(CFLAGS) -c $@
+
+# utils.o: utils.cu utils.h lattice.h
+# 	$(NVCC) $(NVCCFLAGS) -c $@
+
+# clean:
+# 	rm -f $(TARGET) $(OBJS)
+
+CC = gcc
+NVCC = nvcc
+
+TARGET = main
+OBJS = main.o lattice.o utils.o
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+    $(NVCC) -o $@ $^ -lcudart  # Link with cudart library
+
+.PHONY: clean
+
+main.o: main.c lattice.h
+    $(NVCC) $(CFLAGS) -c $@
+
+lattice.o: lattice.c lattice.h utils.h
+    $(NVCC) $(CFLAGS) -c $@
+
+utils.o: utils.cu utils.h lattice.h
+    $(NVCC) $(NVCCFLAGS) -c $@
+
+clean:
+    rm -f $(TARGET) $(OBJS)

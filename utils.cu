@@ -1,4 +1,4 @@
-#include <lattice.h>
+#include "lattice.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +7,7 @@ void cpu_to_cuda(Lattice* lattice) {
   float *data_temp;
 
   cudaMalloc((void **)&data_temp, lattice->kitna * sizeof(int));
-  cudaMemcpy(data_temp, lattice->data, lattice->data * sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(data_temp, lattice->data, lattice->kitna * sizeof(int), cudaMemcpyHostToDevice);
 
   lattice->data = data_temp;
 
@@ -15,7 +15,7 @@ void cpu_to_cuda(Lattice* lattice) {
   strcpy(lattice->kahan, "cuda"); 
 }
 
-void cpu_to_cuda(Lattice* lattice) {
+void cuda_to_cpu(Lattice* lattice) {
   float* data_tmp = (float*)malloc(lattice->kitna * sizeof(int));
 
   cudaMemcpy(data_tmp, lattice->data, lattice->kitna * sizeof(int), cudaMemcpyDeviceToHost);
