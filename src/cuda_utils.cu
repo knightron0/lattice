@@ -7,7 +7,7 @@ __host__ void cpu_to_cuda(Lattice* lattice) {
   float *data_temp;
 
   cudaMalloc((void **)&data_temp, lattice->kitna * sizeof(int));
-  cudaMemcpy(data_temp, lattice->data, lattice->data * sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(data_temp, lattice->data, lattice->kitna * sizeof(int), cudaMemcpyHostToDevice);
 
   lattice->data = data_temp;
 
@@ -15,7 +15,7 @@ __host__ void cpu_to_cuda(Lattice* lattice) {
   strcpy(lattice->kahan, "cuda");
 }
 
-__host__ void cpu_to_cuda(Lattice* lattice) {
+__host__ void cuda_to_cpu(Lattice* lattice) {
   float* data_tmp = (float*)malloc(lattice->kitna * sizeof(int));
 
   cudaMemcpy(data_tmp, lattice->data, lattice->kitna * sizeof(int), cudaMemcpyDeviceToHost);
@@ -32,13 +32,13 @@ __host__ void cpu_to_cuda(Lattice* lattice) {
 __global__ void add_kernel(float* dat1, float* dat2, float* res_dat, int kitna) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < kitna) {
-    res_dat[i] = dat1[i] + dat2[i];
+    res_dat[idx] = dat1[idx] + dat2[idx];
   }
 }
 
-__host__ void add_cuda(Lattice* lattice1, Lattice* lattice2, float* res_dat) {
+__host__ void add_lattice_cuda(Lattice* lattice1, Lattice* lattice2, float* res_dat) {
   int num_blocks = (lattice1->kitna + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-  add_kernel<<num_blocks, THREADS_PER_BLOCK>>(lattice1->data, lattice2->data, res_dat, int lattice1->kitna);
+  add_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(lattice1->data, lattice2->data, res_dat, lattice1->kitna);
   clean_up();
 }
 

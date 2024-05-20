@@ -5,9 +5,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include <cuda_runtime.h>
+
+extern "C" {
 Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
-  Lattice *lattice = (Lattice *) malloc(sizeof(Lattice));
+  Lattice *lattice = (Lattice *)malloc(sizeof(Lattice));
   if (lattice == NULL) {
     printf("Lattice could not be allocated\n");
     return NULL;
@@ -22,7 +26,7 @@ Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
 
   lattice->kahan = kahan;
   int mul = 1;
-  lattice->stride = malloc(ndim * sizeof(int));
+  lattice->stride = (int*)malloc(ndim * sizeof(int));
   for (int i = ndim - 1; i >= 0; i--) {
     lattice->stride[i] = mul;
     mul *= lattice->shapes[i];
@@ -33,6 +37,7 @@ Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
 float get(Lattice* lattice, int *indices) {
   int idx = 0;
 
+  return 0.0f;
 }
 
 void bhej(Lattice* lattice, char* kahan) {
@@ -106,8 +111,8 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
     }
   }
 
-  if (!kahan) {
   char* kahan = (char*)malloc(strlen(lattice1->kahan) + 1);
+  if (!kahan) {
     fprintf(stderr, "malloc failed for device\n");
     exit(1);
   } else {
@@ -124,8 +129,8 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
   if (strcmp(lattice1->kahan, "cuda") == 0) {
     float* res_data;
     cudaMalloc((void**)&res_data, lattice1->kitna * sizeof(float));
-    add_cuda(lattice1, lattice2, res_data);
-    Lattice* res_lattice = crystallize(res_data, shapes, ndim, kahan);
+    add_lattice_cuda(lattice1, lattice2, res_data);
+    Lattice* res_lattice = crystallize(res_data, shapes, ndim, lattice1->kahan);
     return res_lattice;
   } else {
     float* res_data = (float*)malloc(lattice1->kitna * sizeof(float));
@@ -134,26 +139,26 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
       exit(1);
     }
     add_cpu(lattice1, lattice2, res_data);
-    return create_tensor(res_data, shapes, ndim, kahan);
+    return crystallize(res_data, shapes, ndim, lattice1->kahan);
   }
 }
 
 
-Lattice* rand(int* shapes, int ndim) {
+Lattice* rand_lattice(int* shapes, int ndim) {
   int kitna = 1;
   for (int i = 0; i < ndim; i++) {
     kitna *= shapes[i];
   }
 
   float* rand_data = (float*)malloc(kitna * sizeof(float));
-  for (int i = 0; i < size; i++) {
+  for (int i = 0; i < kitna; i++) {
     rand_data[i] = (float)rand() / RAND_MAX;
   }
 
   char* kahan = (char*)malloc(4 * sizeof(char));
   strcpy(kahan, "cpu");
-  Lattice* rand_lattice = crystallize(rand_data, shapes, ndim, kahan);
-  return rand_lattice;
+  Lattice* randed_lattice = crystallize(rand_data, shapes, ndim, kahan);
+  return randed_lattice;
 }
 
 
@@ -168,4 +173,5 @@ Lattice* matmul(Lattice *lattice1, Lattice *lattice2) {
     // NOT IMPLEMENTED YET -- need CUDA kernels to do this for me 
     return NULL;
   }
+}
 }
