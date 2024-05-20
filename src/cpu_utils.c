@@ -5,3 +5,7 @@ void add_cpu(Lattice* lattice1, Lattice* lattice2, float* res_dat) {
     res_dat[i] = lattice1->data[i] + lattice2->data[i];
   }
 }
+
+void matmul_cpu(Lattice* lattice1, Lattice* lattice2, float* res_dat) {
+
+}

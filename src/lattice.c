@@ -106,8 +106,8 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
     }
   }
 
-  char* kahan = (char*)malloc(strlen(lattice1->kahan) + 1);
   if (!kahan) {
+  char* kahan = (char*)malloc(strlen(lattice1->kahan) + 1);
     fprintf(stderr, "malloc failed for device\n");
     exit(1);
   } else {
@@ -138,3 +138,34 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
   }
 }
 
+
+Lattice* rand(int* shapes, int ndim) {
+  int kitna = 1;
+  for (int i = 0; i < ndim; i++) {
+    kitna *= shapes[i];
+  }
+
+  float* rand_data = (float*)malloc(kitna * sizeof(float));
+  for (int i = 0; i < size; i++) {
+    rand_data[i] = (float)rand() / RAND_MAX;
+  }
+
+  char* kahan = (char*)malloc(4 * sizeof(char));
+  strcpy(kahan, "cpu");
+  Lattice* rand_lattice = crystallize(rand_data, shapes, ndim, kahan);
+  return rand_lattice;
+}
+
+
+Lattice* matmul(Lattice *lattice1, Lattice *lattice2) {
+  if (strcmp(lattice1->kahan, lattice2->kahan) != 0) {
+    fprintf(stderr, "devices not the same\n");
+    exit(1);
+  }
+  if (strcmp(lattice1->kahan, "cpu") == 0) {
+    
+  } else {
+    // NOT IMPLEMENTED YET -- need CUDA kernels to do this for me 
+    return NULL;
+  }
+}
