@@ -1,5 +1,8 @@
-#include <math.h>
 #include "lattice.h"
+#include "cuda_utils.h"
+#include "cpu_utils.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -119,18 +122,19 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
   }
 
   if (strcmp(lattice1->kahan, "cuda") == 0) {
-    float* added_data;
-    cudaMalloc((void**)&added_data, lattice1->kitna * sizeof(float));
-    // add_tensor_cuda(lattice1, lattice2, added_data);
-    return crystallize(added_data, shapes, ndim, kahan);
+    float* res_data;
+    cudaMalloc((void**)&res_data, lattice1->kitna * sizeof(float));
+    add_cuda(lattice1, lattice2, res_data);
+    Lattice* res_lattice = crystallize(res_data, shapes, ndim, kahan);
+    return res_lattice;
   } else {
-    float* added_data = (float*)malloc(lattice1->kitna * sizeof(float));
-    if (!added_data) {
+    float* res_data = (float*)malloc(lattice1->kitna * sizeof(float));
+    if (!res_data) {
       fprintf(stderr, "malloc failed\n");
       exit(1);
     }
-    // add_tensor_cpu(lattice1, lattice2, added_data);
-    return create_tensor(added_data, shapes, ndim, kahan);
+    add_cpu(lattice1, lattice2, res_data);
+    return create_tensor(res_data, shapes, ndim, kahan);
   }
 }
 
