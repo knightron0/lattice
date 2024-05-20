@@ -19,6 +19,7 @@ void bhej(Lattice* lattice, char* kahan); // pytorch to_device
 Lattice* matmul(Lattice *lattice1, Lattice *lattice2);
 Lattice* isomerize(Lattice *lattice, int new_ndim, int* new_shapes); // reshape
 Lattice* rand_lattice(int* shapes, int ndim);
+Lattice* broadcast_add(Lattice* lattice, Lattice* lattice_col);
 }
 
 #endif /* LATTICE_H */

@@ -36,7 +36,7 @@ __global__ void add_kernel(float* dat1, float* dat2, float* res_dat, int kitna) 
   }
 }
 
-__host__ void add_lattice_cuda(Lattice* lattice1, Lattice* lattice2, float* res_dat) {
+__host__ void add_cuda(Lattice* lattice1, Lattice* lattice2, float* res_dat) {
   int num_blocks = (lattice1->kitna + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
   add_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(lattice1->data, lattice2->data, res_dat, lattice1->kitna);
   clean_up();

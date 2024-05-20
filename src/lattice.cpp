@@ -1,3 +1,5 @@
+#include <cuda_runtime_api.h>
+
 #include "lattice.h"
 #include "cuda_utils.h"
 #include "cpu_utils.h"
@@ -6,8 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <cuda_runtime.h>
 
 extern "C" {
 Lattice *crystallize(float* data, int* shapes, int ndim, char* kahan) {
@@ -129,7 +129,7 @@ Lattice* add(Lattice* lattice1, Lattice* lattice2) {
   if (strcmp(lattice1->kahan, "cuda") == 0) {
     float* res_data;
     cudaMalloc((void**)&res_data, lattice1->kitna * sizeof(float));
-    add_lattice_cuda(lattice1, lattice2, res_data);
+    add_cuda(lattice1, lattice2, res_data);
     Lattice* res_lattice = crystallize(res_data, shapes, ndim, lattice1->kahan);
     return res_lattice;
   } else {
@@ -168,10 +168,54 @@ Lattice* matmul(Lattice *lattice1, Lattice *lattice2) {
     exit(1);
   }
   if (strcmp(lattice1->kahan, "cpu") == 0) {
-    
+    float* res_data = (float*)malloc(lattice1->kitna * sizeof(float));
+    if (!res_data) {
+      fprintf(stderr, "malloc failed\n");
+      exit(1);
+    }
+    int *res_shape = (int *) malloc(2 * sizeof(int));
+    res_shape[0] = lattice1->shapes[0]; res_shape[1] = lattice2->shapes[1];
+    return crystallize(res_data, res_shape, 2, lattice1->kahan);
   } else {
     // NOT IMPLEMENTED YET -- need CUDA kernels to do this for me 
     return NULL;
   }
+}
+
+Lattice* broadcast_add(Lattice* lattice, Lattice* lattice_col) {
+  if (strcmp(lattice->kahan, lattice_col->kahan) != 0) {
+    fprintf(stderr, "devices not the same\n");
+    exit(1);
+  }
+
+  int max_ndim = lattice->ndim > lattice_col->ndim ? lattice->ndim : lattice_col->ndim;
+  int* broadcasted_shapes = (int*)malloc(max_ndim * sizeof(int));
+  if (!broadcasted_shapes) {
+    fprintf(stderr, "broadcasted shapes malloc erro\n");
+    exit(1);
+  }
+
+  for (int i = 0; i < max_ndim; i++) {
+      int dim1 = i < lattice->ndim ? lattice->shapes[lattice->ndim - 1 - i] : 1;
+      int dim2 = i < lattice_col->ndim ? lattice_col->shapes[lattice_col->ndim - 1 - i] : 1;
+      if (dim1 != dim2 && dim1 != 1 && dim2 != 1) {
+          fprintf(stderr, "imcompatible shapes for broadcasting\n");
+          exit(1);
+      }
+      broadcasted_shapes[max_ndim - 1 - i] = dim1 > dim2 ? dim1 : dim2; // copy voer the 1 to right place
+  }
+  if (strcmp(lattice->kahan, "cpu") == 0) {
+    float* res_data = (float*)malloc(lattice->kitna * sizeof(float));
+    if (!res_data) {
+      fprintf(stderr, "malloc failed\n");
+      exit(1);
+    }
+    broadcast_add_cpu(lattice, lattice_col, broadcasted_shapes, res_data);
+    return crystallize(res_data, broadcasted_shapes, max_ndim, lattice->kahan);
+  } else {
+    // NOT IMPLEMENTED YET -- need CUDA kernels to do this for me 
+    return NULL;
+  }
+
 }
 }
