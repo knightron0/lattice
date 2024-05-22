@@ -1,4 +1,7 @@
-# cuda-torch
+# lattice
+
+some kind of an ml library in cuda
+
 rough timeline: 
 - [ ] feedforward neural network 
 - [ ] manual gradient calculation for backward pass
