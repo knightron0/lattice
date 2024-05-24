@@ -4,7 +4,7 @@
 
 extern "C" {
   void add_cpu(Lattice* lattice1, Lattice* lattice2, float* res_dat) {
-    for (int i = 0; i < lattice1->kitna; i++) {
+    for (int i = 0; i < lattice1->size; i++) {
       res_dat[i] = lattice1->data[i] + lattice2->data[i];
     }
   }
@@ -49,7 +49,7 @@ extern "C" {
         s2 *= broadcast_shapes[i];
     }
 
-    for (int i = 0; i < lattice->kitna; i++) {
+    for (int i = 0; i < lattice->size; i++) {
         int j1 = 0, j2 = 0;
         int linear_index = i;
         for (int j = max_ndim - 1; j >= 0; j--) {

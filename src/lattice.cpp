@@ -1,8 +1,8 @@
 #include <cuda_runtime_api.h>
 
 #include "lattice.h"
-#include "cuda_utils.h"
-#include "cpu_utils.h"
+#include "cpu/cpu_utils.h"
+#include "cuda/cuda_utils.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -20,11 +20,11 @@ extern "C" {
     lattice->shapes = shapes;
     lattice->ndim = ndim;
 
-    lattice->kitna = 1;
+    lattice->size = 1;
     for (int i = 0; i < ndim; i++)
-      lattice->kitna *= lattice->shapes[i];
+      lattice->size *= lattice->shapes[i];
 
-    lattice->kahan = kahan;
+    lattice->where = kahan;
     int mul = 1;
     lattice->stride = (int*)malloc(ndim * sizeof(int));
     for (int i = ndim - 1; i >= 0; i--) {
@@ -41,9 +41,9 @@ extern "C" {
   }
 
   void bhej(Lattice* lattice, char* kahan) {
-    if (strcmp(kahan, "cuda") == 0 && strcmp(lattice->kahan, "cpu") == 0) {
+    if (strcmp(kahan, "cuda") == 0 && strcmp(lattice->where, "cpu") == 0) {
       cpu_to_cuda(lattice);
-    } else if (strcmp(kahan, "cpu") == 0 && strcmp(lattice->kahan, "cuda") == 0) {
+    } else if (strcmp(kahan, "cpu") == 0 && strcmp(lattice->where, "cuda") == 0) {
       cuda_to_cpu(lattice);
     }
   }
@@ -59,12 +59,12 @@ extern "C" {
       }
     }
 
-    char* kahan = (char*)malloc(strlen(lattice->kahan) + 1);
+    char* kahan = (char*)malloc(strlen(lattice->where) + 1);
     if (!kahan) {
       fprintf(stderr, "malloc failed for device\n");
       exit(1);
     } else {
-      strcpy(kahan, lattice->kahan);
+      strcpy(kahan, lattice->where);
     }
 
     int kitna = 1;
@@ -72,7 +72,7 @@ extern "C" {
       kitna *= shapes[i];
     }
 
-    if (kitna != lattice->kitna) {
+    if (kitna != lattice->size) {
       fprintf(stderr, "size mismatch\n");
       exit(1);
     }
@@ -93,14 +93,14 @@ extern "C" {
   }
 
   Lattice* add(Lattice* lattice1, Lattice* lattice2) {
-    if (lattice1->ndim != lattice2->ndim || lattice1->kitna != lattice2->kitna) {
-      fprintf(stderr, "cannot add, ndims || size doesn't match.\n", lattice1->ndim, lattice2->ndim, ".\t", lattice1->kitna, lattice2->kitna);
+    if (lattice1->ndim != lattice2->ndim || lattice1->size != lattice2->size) {
+      fprintf(stderr, "cannot add, ndims || size doesn't match.\n", lattice1->ndim, lattice2->ndim, ".\t", lattice1->size, lattice2->size);
       exit(1);
     }
 
-    if (strcmp(lattice1->kahan, lattice2->kahan) != 0) {
-      fprintf(stderr, "cannot add, device (kahan) doesn't match.\n", lattice1->kahan,
-              lattice2->kahan);
+    if (strcmp(lattice1->where, lattice2->where) != 0) {
+      fprintf(stderr, "cannot add, device (kahan) doesn't match.\n", lattice1->where,
+              lattice2->where);
       exit(1);
     }
 
@@ -111,12 +111,12 @@ extern "C" {
       }
     }
 
-    char* kahan = (char*)malloc(strlen(lattice1->kahan) + 1);
+    char* kahan = (char*)malloc(strlen(lattice1->where) + 1);
     if (!kahan) {
       fprintf(stderr, "malloc failed for device\n");
       exit(1);
     } else {
-      strcpy(kahan, lattice1->kahan);
+      strcpy(kahan, lattice1->where);
     }
 
     int ndim = lattice1->ndim;
@@ -126,20 +126,20 @@ extern "C" {
       exit(1);
     }
 
-    if (strcmp(lattice1->kahan, "cuda") == 0) {
+    if (strcmp(lattice1->where, "cuda") == 0) {
       float* res_data;
-      cudaMalloc((void**)&res_data, lattice1->kitna * sizeof(float));
+      cudaMalloc((void**)&res_data, lattice1->size * sizeof(float));
       add_cuda(lattice1, lattice2, res_data);
-      Lattice* res_lattice = crystallize(res_data, shapes, ndim, lattice1->kahan);
+      Lattice* res_lattice = crystallize(res_data, shapes, ndim, lattice1->where);
       return res_lattice;
     } else {
-      float* res_data = (float*)malloc(lattice1->kitna * sizeof(float));
+      float* res_data = (float*)malloc(lattice1->size * sizeof(float));
       if (!res_data) {
         fprintf(stderr, "malloc failed\n");
         exit(1);
       }
       add_cpu(lattice1, lattice2, res_data);
-      return crystallize(res_data, shapes, ndim, lattice1->kahan);
+      return crystallize(res_data, shapes, ndim, lattice1->where);
     }
   }
 
@@ -163,19 +163,19 @@ extern "C" {
 
 
   Lattice* matmul(Lattice *lattice1, Lattice *lattice2) {
-    if (strcmp(lattice1->kahan, lattice2->kahan) != 0) {
+    if (strcmp(lattice1->where, lattice2->where) != 0) {
       fprintf(stderr, "devices not the same\n");
       exit(1);
     }
-    if (strcmp(lattice1->kahan, "cpu") == 0) {
-      float* res_data = (float*)malloc(lattice1->kitna * sizeof(float));
+    if (strcmp(lattice1->where, "cpu") == 0) {
+      float* res_data = (float*)malloc(lattice1->size * sizeof(float));
       if (!res_data) {
         fprintf(stderr, "malloc failed\n");
         exit(1);
       }
       int *res_shape = (int *) malloc(2 * sizeof(int));
       res_shape[0] = lattice1->shapes[0]; res_shape[1] = lattice2->shapes[1];
-      return crystallize(res_data, res_shape, 2, lattice1->kahan);
+      return crystallize(res_data, res_shape, 2, lattice1->where);
     } else {
       // NOT IMPLEMENTED YET -- need CUDA kernels to do this for me 
       return NULL;
@@ -183,7 +183,7 @@ extern "C" {
   }
 
   Lattice* broadcast_add(Lattice* lattice, Lattice* lattice_col) {
-    if (strcmp(lattice->kahan, lattice_col->kahan) != 0) {
+    if (strcmp(lattice->where, lattice_col->where) != 0) {
       fprintf(stderr, "devices not the same\n");
       exit(1);
     }
@@ -204,14 +204,14 @@ extern "C" {
         }
         broadcasted_shapes[max_ndim - 1 - i] = dim1 > dim2 ? dim1 : dim2; // copy voer the 1 to right place
     }
-    if (strcmp(lattice->kahan, "cpu") == 0) {
-      float* res_data = (float*)malloc(lattice->kitna * sizeof(float));
+    if (strcmp(lattice->where, "cpu") == 0) {
+      float* res_data = (float*)malloc(lattice->size * sizeof(float));
       if (!res_data) {
         fprintf(stderr, "malloc failed\n");
         exit(1);
       }
       broadcast_add_cpu(lattice, lattice_col, broadcasted_shapes, res_data);
-      return crystallize(res_data, broadcasted_shapes, max_ndim, lattice->kahan);
+      return crystallize(res_data, broadcasted_shapes, max_ndim, lattice->where);
     } else {
       // NOT IMPLEMENTED YET -- need CUDA kernels to do this for me 
       return NULL;

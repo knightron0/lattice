@@ -5,13 +5,13 @@ NVCC = nvcc
 CFLAGS = -Wall -g
 CXXFLAGS = -Wall -g
 
-SRCS = src/lattice.cpp src/cpu_utils.cpp src/cuda_utils.cu app/ff.cpp app/losses.cpp
+SRCS = 
 OBJS = $(SRCS:.cpp=.o)
 OBJS := $(OBJS:.cu=.cu.o)
 
 TARGET = nobodycares
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) $(CU_OBJS)
 	$(NVCC) $(OBJS) -o $@ -lcudart -lcuda
 
 %.o: %.cpp
