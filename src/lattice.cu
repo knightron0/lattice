@@ -52,10 +52,6 @@ float Lattice::get(int *indices) {
   return this->data[index];
 }
 
-void Lattice::scale(float factor) {
-  for (int i = 0; i < this->size; i++) this->data[i] *= factor;
-}
-
 void Lattice::to_gpu() {
   float *data_temp;
 
@@ -86,7 +82,7 @@ void Lattice::send(char *dest) {
 }
 
 Lattice Lattice::operator+(const Lattice& other) const {
-  if (this->ndim != other.ndim) {
+  if (this->ndim != other.ndim || this->size != other.size) {
     fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
     exit(1);
   }
@@ -94,6 +90,72 @@ Lattice Lattice::operator+(const Lattice& other) const {
   result.send((char *)"cuda");
   add_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
   return result;
+}
+
+Lattice Lattice::operator-(const Lattice& other) const {
+  if (this->ndim != other.ndim || this->size != other.size) {
+    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+    exit(1);
+  }
+  Lattice result = Lattice(this->shapes, this->ndim, 0);
+  result.send((char *)"cuda");
+  sub_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
+  return result;
+}
+
+
+Lattice Lattice::operator/(const Lattice& other) const {
+  if (this->ndim != other.ndim || this->size != other.size) {
+    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+    exit(1);
+  }
+  Lattice result = Lattice(this->shapes, this->ndim, 0);
+  result.send((char *)"cuda");
+  div_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
+  return result;
+}
+
+Lattice Lattice::operator*(const Lattice& other) const {
+  if (this->ndim != other.ndim || this->size != other.size) {
+    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+    exit(1);
+  }
+  Lattice result = Lattice(this->shapes, this->ndim, 0);
+  result.send((char *)"cuda");
+  mul_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
+  return result;
+}
+
+template <typename T>
+Lattice operator+(const Lattice& lhs, const T& scalar) {
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  result.send((char *)"cuda");
+  add_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
+  return result; 
+}
+
+template <typename T>
+Lattice operator-(const Lattice& lhs, const T& scalar) {
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  result.send((char *)"cuda");
+  sub_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
+  return result; 
+}
+
+template <typename T>
+Lattice operator/(const Lattice& lhs, const T& scalar) {
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  result.send((char *)"cuda");
+  div_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
+  return result; 
+}
+
+template <typename T>
+Lattice operator*(const Lattice& lhs, const T& scalar) {
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  result.send((char *)"cuda");
+  mul_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
+  return result; 
 }
 
 int main() {
@@ -122,7 +184,7 @@ int main() {
   }
   a.send((char *)"cuda");
   b.send((char *)"cuda");
-  Lattice c = a + b;
+  Lattice c = a - 10;
   c.send((char *)"cpu");
   printf("Lattice c: \n");
   for (int i = 0; i < shapes[0]; i++) {
