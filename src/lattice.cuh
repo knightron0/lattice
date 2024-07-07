@@ -10,9 +10,20 @@ public:
     int size; // size of the lattice (= dimension product)
     char* where; // location of the lattice
 
-    Lattice(int *shapes, int ndim);
+    Lattice(int *shapes, int ndim, int mode);
     ~Lattice();
     float get(int *indices);
+    void scale(float factor);
+    void send(char *dest);
+    void reshape(int *new_shapes, int new_ndim); 
+    void to_gpu();
+    void to_cpu();
+
+    Lattice operator+(const Lattice& other) const;
+    // Lattice operator-(const Lattice& other) const;
+    // Lattice operator*(const Lattice& other) const;
+    // Lattice operator/(const Lattice& other) const;
+
 };
 
 
