@@ -52,6 +52,16 @@ float Lattice::get(int *indices) {
   return this->data[index];
 }
 
+void Lattice::set(int *indices, float val) {
+  if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
+    printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
+    return;
+  }
+  int index = 0;
+  for (int i = 0; i < this->ndim; i++) index += indices[i] * this->stride[i];
+  this->data[index] = val;
+}
+
 void Lattice::to_gpu() {
   float *data_temp;
 
@@ -158,8 +168,29 @@ Lattice operator*(const Lattice& lhs, const T& scalar) {
   return result; 
 }
 
+// only works for 2d matrices
+Lattice Lattice::matmul(Lattice other) {
+  if (this->ndim != 2 || other.ndim != 2) {
+    fprintf(stderr, "Error: Matmul operation requires both lattices to be 2D.\n");
+    exit(1);
+  }
+  if (this->shapes[1] != other.shapes[0]) {
+    fprintf(stderr, "Error: Incompatible dimensions for matrix multiplication.\n");
+    exit(1);
+  }
+
+  int new_shapes[2] = {this->shapes[0], other.shapes[1]};
+  Lattice result = Lattice(new_shapes, this->ndim, 0);
+  result.send((char *)"cuda"); 
+
+  dim3 gridDim(ceil((float) new_shapes[0] / 32), ceil((float) new_shapes[1] / 32), 1);
+  dim3 blockDim(32, 32, 1);
+  matmul_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->shapes[0], this->shapes[1], other.shapes[1], this->stride, other.stride, result.stride);
+  return result;
+}
+
 int main() {
-  int shapes[2] = {10, 10};
+  int shapes[2] = {2, 2};
   int ndim = 2;
   Lattice a = Lattice(shapes, ndim, 2);
   printf("Lattice a: \n");
@@ -172,10 +203,11 @@ int main() {
     }
     printf("\n");
   }
-  Lattice b = Lattice(shapes, ndim, 1);
+  int b_shapes[2] = {2, 1}; 
+  Lattice b = Lattice(b_shapes, ndim, 1);
   printf("Lattice b: \n");
-  for (int i = 0; i < shapes[0]; i++) {
-    for (int j = 0; j < shapes[0]; j++) {
+  for (int i = 0; i < b_shapes[0]; i++) {
+    for (int j = 0; j < b_shapes[1]; j++) {
       indices[0] = i;
       indices[1] = j;
       printf("%f ", b.get(indices));
@@ -184,7 +216,7 @@ int main() {
   }
   a.send((char *)"cuda");
   b.send((char *)"cuda");
-  Lattice c = a - 10;
+  Lattice c = a.matmul(b);
   c.send((char *)"cpu");
   printf("Lattice c: \n");
   for (int i = 0; i < shapes[0]; i++) {
