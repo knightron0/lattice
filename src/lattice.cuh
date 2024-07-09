@@ -18,6 +18,7 @@ public:
   void reshape(int *new_shapes, int new_ndim); 
   void to_gpu();
   void to_cpu();
+  void send_stride(char *dest);
 
   Lattice operator+(const Lattice& other) const;
   Lattice operator-(const Lattice& other) const;

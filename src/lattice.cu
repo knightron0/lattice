@@ -67,6 +67,7 @@ void Lattice::to_gpu() {
 
   cudaMalloc((void **)&data_temp, this->size * sizeof(float));
   cudaMemcpy(data_temp, this->data, this->size * sizeof(float), cudaMemcpyHostToDevice);
+  free(this->data);
 
   this->data = data_temp;
   this->where = (char *)"cuda"; 
@@ -88,6 +89,26 @@ void Lattice::send(char *dest) {
     this->to_gpu();
   } else {
     this->to_cpu();
+  }
+}
+
+
+void Lattice::send_stride(char *dest) {
+  if (strcmp(dest, "cuda") == 0) {
+    int *stride_temp;
+
+    cudaMalloc((void **)&stride_temp, this->ndim * sizeof(int));
+    cudaMemcpy(stride_temp, this->stride, this->ndim * sizeof(int), cudaMemcpyHostToDevice);
+    free(this->stride);
+
+    this->stride = stride_temp;
+  } else {
+    int *stride_temp = (int*)malloc(this->ndim * sizeof(int));
+
+    cudaMemcpy(stride_temp, this->stride, this->ndim * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaFree(this->stride);
+
+    this->stride = stride_temp;
   }
 }
 
@@ -182,10 +203,15 @@ Lattice Lattice::matmul(Lattice other) {
   int new_shapes[2] = {this->shapes[0], other.shapes[1]};
   Lattice result = Lattice(new_shapes, this->ndim, 0);
   result.send((char *)"cuda"); 
-
+  this->send_stride((char *)"cuda");
+  other.send_stride((char *)"cuda");
+  result.send_stride((char *)"cuda");
   dim3 gridDim(ceil((float) new_shapes[0] / 32), ceil((float) new_shapes[1] / 32), 1);
   dim3 blockDim(32, 32, 1);
   matmul_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->shapes[0], this->shapes[1], other.shapes[1], this->stride, other.stride, result.stride);
+  this->send_stride((char *)"cpu");
+  other.send_stride((char *)"cpu");
+  result.send_stride((char *)"cpu");
   return result;
 }
 
@@ -203,7 +229,7 @@ int main() {
     }
     printf("\n");
   }
-  int b_shapes[2] = {2, 1}; 
+  int b_shapes[2] = {2, 2}; 
   Lattice b = Lattice(b_shapes, ndim, 1);
   printf("Lattice b: \n");
   for (int i = 0; i < b_shapes[0]; i++) {
