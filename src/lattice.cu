@@ -33,15 +33,15 @@ Lattice::Lattice(int *shapes, int ndim, int mode) {
   this->where = (char *)"cpu";
 }
 
-Lattice::~Lattice() {
-  if (strcmp(this->where, "cpu") == 0) {
-    free(this->data);
-    free(this->stride);
-  } else {
-    cudaFree(this->data);
-    cudaFree(this->stride);
-  }
-}
+// Lattice::~Lattice() {
+//   if (strcmp(this->where, "cpu") == 0) {
+//     free(this->data);
+//     free(this->stride);
+//   } else {
+//     cudaFree(this->data);
+//     cudaFree(this->stride);
+//   }
+// }
 
 float Lattice::get(int *indices) {
   if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
@@ -102,14 +102,34 @@ void Lattice::send(char *dest) {
   }
 }
 
+void Lattice::T() {
+  for (int i = 0; i < (this->ndim + 1) / 2; i++) {
+    int temp = this->shapes[i];
+    this->shapes[i] = this->shapes[this->ndim - 1 - i];
+    this->shapes[this->ndim - 1 - i] = temp;
+
+    temp = this->stride[i];
+    this->stride[i] = this->stride[this->ndim - 1 - i];
+    this->stride[this->ndim - 1 - i] = temp;
+  }
+}
+
 Lattice Lattice::operator+(const Lattice& other) const {
   if (this->ndim != other.ndim || this->size != other.size) {
     fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
     exit(1);
   }
+  for (int i = 0; i < this->ndim; i++) {
+    if (this->shapes[i] != other.shapes[i]) {
+      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+      exit(1);
+    }
+  }
   Lattice result = Lattice(this->shapes, this->ndim, 0);
   result.send((char *)"cuda");
-  add_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
+  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
+  dim3 blockDim(32, 32, 1);
+  add_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
   return result;
 }
 
@@ -118,9 +138,17 @@ Lattice Lattice::operator-(const Lattice& other) const {
     fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
     exit(1);
   }
+  for (int i = 0; i < this->ndim; i++) {
+    if (this->shapes[i] != other.shapes[i]) {
+      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+      exit(1);
+    }
+  }
   Lattice result = Lattice(this->shapes, this->ndim, 0);
   result.send((char *)"cuda");
-  sub_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
+  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
+  dim3 blockDim(32, 32, 1);
+  sub_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
   return result;
 }
 
@@ -130,9 +158,17 @@ Lattice Lattice::operator/(const Lattice& other) const {
     fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
     exit(1);
   }
+  for (int i = 0; i < this->ndim; i++) {
+    if (this->shapes[i] != other.shapes[i]) {
+      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+      exit(1);
+    }
+  }
   Lattice result = Lattice(this->shapes, this->ndim, 0);
   result.send((char *)"cuda");
-  div_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
+  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
+  dim3 blockDim(32, 32, 1);
+  div_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data,  this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
   return result;
 }
 
@@ -141,9 +177,17 @@ Lattice Lattice::operator*(const Lattice& other) const {
     fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
     exit(1);
   }
+  for (int i = 0; i < this->ndim; i++) {
+    if (this->shapes[i] != other.shapes[i]) {
+      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+      exit(1);
+    }
+  }
   Lattice result = Lattice(this->shapes, this->ndim, 0);
   result.send((char *)"cuda");
-  mul_lattice<<<ceil((float)this->size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(this->data, other.data, result.data, this->size);
+  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
+  dim3 blockDim(32, 32, 1);
+  mul_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
   return result;
 }
 
@@ -195,26 +239,37 @@ Lattice Lattice::matmul(Lattice other) {
   result.send((char *)"cuda"); 
   dim3 gridDim(ceil((float) new_shapes[0] / 32), ceil((float) new_shapes[1] / 32), 1);
   dim3 blockDim(32, 32, 1);
-  matmul_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->shapes[0], this->shapes[1], other.shapes[1], this->stride, other.stride, result.stride);
+  matmul_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->shapes[0], this->shapes[1], other.shapes[1], this->stride, other.stride, result.stride, this->ndim, other.ndim, result.ndim);
   return result;
 }
 
 int main() {
-  int shapes[2] = {2, 2};
+  int shapes[2] = {2, 3};
   int ndim = 2;
   Lattice a = Lattice(shapes, ndim, 2);
   printf("Lattice a: \n");
   int indices[2] = {0, 0};
   for (int i = 0; i < shapes[0]; i++) {
-    for (int j = 0; j < shapes[0]; j++) {
+    for (int j = 0; j < shapes[1]; j++) {
       indices[0] = i;
       indices[1] = j;
       printf("%f ", a.get(indices));
     }
     printf("\n");
   }
-  int b_shapes[2] = {2, 2}; 
-  Lattice b = Lattice(b_shapes, ndim, 1);
+  a.T();
+  printf("Lattice a after tranpose: \n");
+  indices[0] = indices[1] = 0;
+  for (int i = 0; i < shapes[0]; i++) {
+    for (int j = 0; j < shapes[1]; j++) {
+      indices[0] = i;
+      indices[1] = j;
+      printf("%f ", a.get(indices));
+    }
+    printf("\n");
+  }
+  int b_shapes[2] = {3, 2}; 
+  Lattice b = Lattice(b_shapes, ndim, 2);
   printf("Lattice b: \n");
   for (int i = 0; i < b_shapes[0]; i++) {
     for (int j = 0; j < b_shapes[1]; j++) {
@@ -226,11 +281,11 @@ int main() {
   }
   a.send((char *)"cuda");
   b.send((char *)"cuda");
-  Lattice c = a.matmul(b);
+  Lattice c = a * b;
   c.send((char *)"cpu");
   printf("Lattice c: \n");
   for (int i = 0; i < shapes[0]; i++) {
-    for (int j = 0; j < shapes[0]; j++) {
+    for (int j = 0; j < shapes[1]; j++) {
       indices[0] = i;
       indices[1] = j;
       printf("%f ", c.get(indices));

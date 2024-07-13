@@ -12,6 +12,9 @@ rough timeline:
 ...some intermediate steps, then eventually:
 - [ ] transformer
 
+somewhere along the line:
+- [ ] get close to cuBLAS [performance on SGEMM](https://siboehm.com/articles/22/CUDA-MMM) 
+- [ ] decide how to benchmark/ compare speed
 
 task for initial steps: [MNIST dataset](https://www.kaggle.com/competitions/digit-recognizer)
 

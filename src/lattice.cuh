@@ -11,14 +11,16 @@ public:
   char* where; // location of the lattice
 
   Lattice(int *shapes, int ndim, int mode);
-  ~Lattice();
+  // ~Lattice();
   float get(int *indices);
   void set(int *indices, float val);
   void send(char *dest);
   void reshape(int *new_shapes, int new_ndim); 
   void to_gpu();
   void to_cpu();
-  void send_stride(char *dest);
+  // we need a copy function?
+
+  void T();
 
   Lattice operator+(const Lattice& other) const;
   Lattice operator-(const Lattice& other) const;
