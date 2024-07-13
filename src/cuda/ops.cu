@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "ops.cuh"
 
+/* ------------------ START GPU UTIL FUNCTIONS ------------------*/
 __device__ float gpu_get(float *data, int *stride, int *indices, int ndim) {
   int index = 0;
   for (int i = 0; i < 2; i++) index += indices[i] * stride[i];
@@ -12,7 +13,9 @@ __device__ void gpu_set(float *data, int *stride, int *indices, float val, int n
   for (int i = 0; i < ndim; i++) index += indices[i] * stride[i];
   data[index] = val;
 }
+/* ------------------ END GPU UTIL FUNCTIONS ------------------*/
 
+/* ------------------ START ELEMENTWISE OP KERNELS ------------------*/
 __global__ void add_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim) {
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
   const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -52,7 +55,9 @@ __global__ void mul_lattice(float *a, float *b, float *c, int size, int rows, in
     gpu_set(c, c_stride, indices, gpu_get(a, a_stride, indices, ndim) * gpu_get(b, b_stride, indices, ndim), ndim);
   }
 }
+/* ------------------ END ELEMENTWISE OP KERNELS ------------------*/
 
+/* ------------------ BEGIN SCALAR OP KERNELS ------------------*/
 __global__ void add_scalar_lattice(float *a, float scalar, float *c, int size) {
   int id = blockDim.x * blockIdx.x + threadIdx.x;
   if (id < size) c[id] = a[id] + scalar;
@@ -72,7 +77,9 @@ __global__ void mul_scalar_lattice(float *a, float scalar, float *c, int size) {
   int id = blockDim.x * blockIdx.x + threadIdx.x;
   if (id < size) c[id] = a[id] * scalar;
 }
+/* ------------------ END SCALAR OP KERNELS ------------------*/
 
+/* ------------------ START MATMUL KERNEL ------------------*/
 __global__ void matmul_lattice(float *a, float *b, float *c, int a_rows, int a_cols, int b_cols, int* a_stride, int* b_stride, int* c_stride, int a_ndim, int b_ndim, int c_ndim) {
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
   const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -88,3 +95,4 @@ __global__ void matmul_lattice(float *a, float *b, float *c, int a_rows, int a_c
     gpu_set(c, c_stride, c_indices, tmp, c_ndim);
   }
 }
+/* ------------------ END MATMUL KERNEL ------------------*/

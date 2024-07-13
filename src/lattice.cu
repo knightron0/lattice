@@ -1,5 +1,6 @@
 #include "lattice.cuh"
 #include "cuda/ops.cuh"
+#include "utils/activations.cuh"
 
 #include <stdio.h>
 #include <stdlib.h>
