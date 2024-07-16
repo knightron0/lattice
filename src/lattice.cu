@@ -244,54 +244,54 @@ Lattice Lattice::matmul(Lattice other) {
   return result;
 }
 
-int main() {
-  int shapes[2] = {2, 3};
-  int ndim = 2;
-  Lattice a = Lattice(shapes, ndim, 2);
-  printf("Lattice a: \n");
-  int indices[2] = {0, 0};
-  for (int i = 0; i < shapes[0]; i++) {
-    for (int j = 0; j < shapes[1]; j++) {
-      indices[0] = i;
-      indices[1] = j;
-      printf("%f ", a.get(indices));
-    }
-    printf("\n");
-  }
-  a.T();
-  printf("Lattice a after tranpose: \n");
-  indices[0] = indices[1] = 0;
-  for (int i = 0; i < shapes[0]; i++) {
-    for (int j = 0; j < shapes[1]; j++) {
-      indices[0] = i;
-      indices[1] = j;
-      printf("%f ", a.get(indices));
-    }
-    printf("\n");
-  }
-  int b_shapes[2] = {3, 2}; 
-  Lattice b = Lattice(b_shapes, ndim, 2);
-  printf("Lattice b: \n");
-  for (int i = 0; i < b_shapes[0]; i++) {
-    for (int j = 0; j < b_shapes[1]; j++) {
-      indices[0] = i;
-      indices[1] = j;
-      printf("%f ", b.get(indices));
-    }
-    printf("\n");
-  }
-  a.send((char *)"cuda");
-  b.send((char *)"cuda");
-  Lattice c = a * b;
-  c.send((char *)"cpu");
-  printf("Lattice c: \n");
-  for (int i = 0; i < shapes[0]; i++) {
-    for (int j = 0; j < shapes[1]; j++) {
-      indices[0] = i;
-      indices[1] = j;
-      printf("%f ", c.get(indices));
-    }
-    printf("\n");
-  } 
-  return 0;
-}
+// int main() {
+//   int shapes[2] = {2, 3};
+//   int ndim = 2;
+//   Lattice a = Lattice(shapes, ndim, 2);
+//   printf("Lattice a: \n");
+//   int indices[2] = {0, 0};
+//   for (int i = 0; i < shapes[0]; i++) {
+//     for (int j = 0; j < shapes[1]; j++) {
+//       indices[0] = i;
+//       indices[1] = j;
+//       printf("%f ", a.get(indices));
+//     }
+//     printf("\n");
+//   }
+//   a.T();
+//   printf("Lattice a after tranpose: \n");
+//   indices[0] = indices[1] = 0;
+//   for (int i = 0; i < shapes[0]; i++) {
+//     for (int j = 0; j < shapes[1]; j++) {
+//       indices[0] = i;
+//       indices[1] = j;
+//       printf("%f ", a.get(indices));
+//     }
+//     printf("\n");
+//   }
+//   int b_shapes[2] = {3, 2}; 
+//   Lattice b = Lattice(b_shapes, ndim, 2);
+//   printf("Lattice b: \n");
+//   for (int i = 0; i < b_shapes[0]; i++) {
+//     for (int j = 0; j < b_shapes[1]; j++) {
+//       indices[0] = i;
+//       indices[1] = j;
+//       printf("%f ", b.get(indices));
+//     }
+//     printf("\n");
+//   }
+//   a.send((char *)"cuda");
+//   b.send((char *)"cuda");
+//   Lattice c = a * b;
+//   c.send((char *)"cpu");
+//   printf("Lattice c: \n");
+//   for (int i = 0; i < shapes[0]; i++) {
+//     for (int j = 0; j < shapes[1]; j++) {
+//       indices[0] = i;
+//       indices[1] = j;
+//       printf("%f ", c.get(indices));
+//     }
+//     printf("\n");
+//   } 
+//   return 0;
+// }
