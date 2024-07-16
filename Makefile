@@ -24,4 +24,4 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cu
 	$(NVCC) -c -o $@ $<
 
 clean:
-	rm -f $(OBJ_DIR)/*.o $(TARGET)
+	rm -f $(OBJ_DIR)/*.o $(OBJ_DIR)/*/*.o $(TARGET)
