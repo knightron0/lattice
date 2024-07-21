@@ -1,6 +1,6 @@
 #include "lattice.cuh"
 #include "cuda/ops.cuh"
-#include "utils/activations.cuh"
+#include "cuda/activations.cuh"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@
 
 #define THREADS_PER_BLOCK 256
 
-Lattice::Lattice(int *shapes, int ndim, int mode) {
+Lattice::Lattice(int *shapes, int ndim, Mode mode) {
   this->shapes = shapes;
   this->ndim = ndim;
   
@@ -16,15 +16,18 @@ Lattice::Lattice(int *shapes, int ndim, int mode) {
   for (int i = 0; i < ndim; i++) this->size *= shapes[i];
 
   this->data = (float *)malloc(this->size * sizeof(float));
-  if (mode == 2) {
-    // random
-    for (int i = 0; i < this->size; i++) this->data[i] = (float)rand() / (float)RAND_MAX;
-  } else if (mode == 1) {
-    // ones
-    for (int i = 0; i < this->size; i++) this->data[i] = (float)1.0f;
-  } else {
-    // zero (default)
-    for (int i = 0; i < this->size; i++) this->data[i] = (float)0.0f;
+  switch (mode) {
+    case RANDOM:
+      // random
+      for (int i = 0; i < this->size; i++) this->data[i] = (float)rand() / (float)RAND_MAX;
+      break;
+    case ONES:
+      // ones
+      for (int i = 0; i < this->size; i++) this->data[i] = (float)1.0f;
+      break;
+    default:
+      // zero (default)
+      for (int i = 0; i < this->size; i++) this->data[i] = (float)0.0f;
   }
 
   this->stride = (int *)malloc(this->ndim * sizeof(int));
@@ -126,7 +129,7 @@ Lattice Lattice::operator+(const Lattice& other) const {
       exit(1);
     }
   }
-  Lattice result = Lattice(this->shapes, this->ndim, 0);
+  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
   result.send((char *)"cuda");
   dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
   dim3 blockDim(32, 32, 1);
@@ -145,7 +148,7 @@ Lattice Lattice::operator-(const Lattice& other) const {
       exit(1);
     }
   }
-  Lattice result = Lattice(this->shapes, this->ndim, 0);
+  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
   result.send((char *)"cuda");
   dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
   dim3 blockDim(32, 32, 1);
@@ -165,7 +168,7 @@ Lattice Lattice::operator/(const Lattice& other) const {
       exit(1);
     }
   }
-  Lattice result = Lattice(this->shapes, this->ndim, 0);
+  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
   result.send((char *)"cuda");
   dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
   dim3 blockDim(32, 32, 1);
@@ -184,7 +187,7 @@ Lattice Lattice::operator*(const Lattice& other) const {
       exit(1);
     }
   }
-  Lattice result = Lattice(this->shapes, this->ndim, 0);
+  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
   result.send((char *)"cuda");
   dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
   dim3 blockDim(32, 32, 1);
@@ -236,7 +239,7 @@ Lattice Lattice::matmul(Lattice other) {
   }
 
   int new_shapes[2] = {this->shapes[0], other.shapes[1]};
-  Lattice result = Lattice(new_shapes, this->ndim, 0);
+  Lattice result = Lattice(new_shapes, this->ndim, ZERO);
   result.send((char *)"cuda"); 
   dim3 gridDim(ceil((float) new_shapes[0] / 32), ceil((float) new_shapes[1] / 32), 1);
   dim3 blockDim(32, 32, 1);

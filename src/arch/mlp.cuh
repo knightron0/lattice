@@ -10,10 +10,13 @@ enum ActivationFunction {
     SOFTMAX
 };
 
+
+
 class MLP {
 public:
-  Lattice* weights;
-
+  Lattice** weights;
+  int n_layers;
+ 
 
   MLP(int n_hidden, int* hidden_nodes, ActivationFunction* activations); 
 };

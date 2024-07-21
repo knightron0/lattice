@@ -1,6 +1,12 @@
 #ifndef LATTICE_CUH
 #define LATTICE_CUH
 
+enum Mode {
+  ZERO = 0,
+  ONES = 1,
+  RANDOM = 2
+};
+
 class Lattice {
 public:
   float *data; // data pointer
@@ -10,7 +16,7 @@ public:
   int size; // size of the lattice (= dimension product)
   char* where; // location of the lattice
 
-  Lattice(int *shapes, int ndim, int mode);
+  Lattice(int *shapes, int ndim, Mode mode);
   // ~Lattice();
   float get(int *indices);
   void set(int *indices, float val);

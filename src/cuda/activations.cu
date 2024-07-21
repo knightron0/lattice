@@ -1,21 +1,21 @@
 #include "activations.cuh"
 
 Lattice relu(const Lattice& input) {
-  Lattice result = Lattice(input.shapes, input.ndim, 0);
+  Lattice result = Lattice(input.shapes, input.ndim, ZERO);
   result.send((char *)"cuda");
   relu_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
   return result;
 }
 
 Lattice sigmoid(const Lattice& input) {
-  Lattice result = Lattice(input.shapes, input.ndim, 0);
+  Lattice result = Lattice(input.shapes, input.ndim, ZERO);
   result.send((char *)"cuda");
   sigmoid_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
   return result;
 }
 
 Lattice tanh(const Lattice& input) {
-  Lattice result = Lattice(input.shapes, input.ndim, 0);
+  Lattice result = Lattice(input.shapes, input.ndim, ZERO);
   result.send((char *)"cuda");
   tanh_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
   return result;
