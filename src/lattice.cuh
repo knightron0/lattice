@@ -16,6 +16,7 @@ public:
   int size; // size of the lattice (= dimension product)
   char* where; // location of the lattice
 
+  Lattice();
   Lattice(int *shapes, int ndim, Mode mode);
   // ~Lattice();
   float get(int *indices);
@@ -24,7 +25,7 @@ public:
   void reshape(int *new_shapes, int new_ndim); 
   void to_gpu();
   void to_cpu();
-  // we need a copy function?
+  // a copy() function to another lattice?
 
   void T();
 

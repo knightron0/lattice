@@ -8,8 +8,15 @@
 
 #define THREADS_PER_BLOCK 256
 
+Lattice::Lattice() {
+  this->data = NULL;
+}
+
 Lattice::Lattice(int *shapes, int ndim, Mode mode) {
-  this->shapes = shapes;
+  this->shapes = (int *)malloc(ndim * sizeof(int));
+  for (int i = 0; i < ndim; i++) {
+    this->shapes[i] = shapes[i];
+  }
   this->ndim = ndim;
   
   this->size = 1;
@@ -111,10 +118,31 @@ void Lattice::T() {
     int temp = this->shapes[i];
     this->shapes[i] = this->shapes[this->ndim - 1 - i];
     this->shapes[this->ndim - 1 - i] = temp;
+  }
 
-    temp = this->stride[i];
-    this->stride[i] = this->stride[this->ndim - 1 - i];
-    this->stride[this->ndim - 1 - i] = temp;
+  if (strcmp(this->where, "cuda") == 0) {
+    int* d_stride;
+    cudaMalloc((void**)&d_stride, this->ndim * sizeof(int));
+    cudaMemcpy(d_stride, this->stride, this->ndim * sizeof(int), cudaMemcpyHostToDevice);
+
+    int* d_temp;
+    cudaMalloc((void**)&d_temp, sizeof(int));
+
+    for (int i = 0; i < (this->ndim + 1) / 2; i++) {
+      cudaMemcpy(d_temp, &d_stride[i], sizeof(int), cudaMemcpyDeviceToDevice);
+      cudaMemcpy(&d_stride[i], &d_stride[this->ndim - 1 - i], sizeof(int), cudaMemcpyDeviceToDevice);
+      cudaMemcpy(&d_stride[this->ndim - 1 - i], d_temp, sizeof(int), cudaMemcpyDeviceToDevice);
+    }
+
+    cudaMemcpy(this->stride, d_stride, this->ndim * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaFree(d_stride);
+    cudaFree(d_temp);
+  } else {
+    for (int i = 0; i < (this->ndim + 1) / 2; i++) {
+      int temp = this->stride[i];
+      this->stride[i] = this->stride[this->ndim - 1 - i];
+      this->stride[this->ndim - 1 - i] = temp;
+    }
   }
 }
 

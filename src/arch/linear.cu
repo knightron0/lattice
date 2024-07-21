@@ -1,4 +1,5 @@
 #include "linear.cuh"
+#include <stdio.h>
 
 Linear::Linear(int in_dim, int out_dim, int bias, char* where) {
   this->in_dim = in_dim;
@@ -14,7 +15,7 @@ Linear::Linear(int in_dim, int out_dim, int bias, char* where) {
 
   this->where = where;
   if (strcmp(this->where, "cuda") == 0) {
-    this->send("cuda");
+    this->send((char *)"cuda");
   }
 }
 
@@ -29,6 +30,11 @@ Lattice Linear::forward(Lattice x) {
   if (strcmp(x.where, this->where) != 0) {
     x.send(this->where);
   }
-  return x.matmul(this->w.T()) + this->b;
+  this->w.T();
+  Lattice result = x.matmul(this->w) + this->b;
+  printf("[%dx%d] x [%dx%d] + [%dx%d] = [%dx%d]\n", x.shapes[0], x.shapes[1], this->w.shapes[0], this->w.shapes[1], this->b.shapes[0], this->b.shapes[1], result.shapes[0], result.shapes[1]);
+  this->w.T();
+
+  return result;
 }
 

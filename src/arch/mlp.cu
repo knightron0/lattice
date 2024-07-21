@@ -15,12 +15,12 @@ hidden_nodes[n_hidden - 1] x OUT_FEATURES
 MLP::MLP(int n_hidden, int* hidden_nodes, ActivationFunction* activations) {
   this->n_layers = n_hidden;
   this->weights = (Lattice **)malloc(sizeof(Lattice *) * n_hidden);
-  this->activations = 
+  // this->activations = 
   for (int i = 0; i < this->n_layers; i++) {
     
   }  
 }
 
-Lattice MLP::forward() {
-
-}
+// Lattice MLP::forward() {
+//   return NULL;
+// }
