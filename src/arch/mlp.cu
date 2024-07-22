@@ -1,26 +1,25 @@
 #include "mlp.cuh"
+#include <stdio.h>
 
 #define IN_FEATURES 784
 #define OUT_FEATURES 10
 
-/* IN_FEATURES x hidden_nodes[0]
-hidden_nodes[0] x hidden_nodes[1]
-.
-.
-.
-hidden_nodes[n_hidden - 1] x OUT_FEATURES
-*/
-
-
 MLP::MLP(int n_hidden, int* hidden_nodes, ActivationFunction* activations) {
-  this->n_layers = n_hidden;
-  this->weights = (Lattice **)malloc(sizeof(Lattice *) * n_hidden);
-  // this->activations = 
+  this->n_layers = n_hidden + 1;
+  this->layers = (Linear**) malloc(n_hidden * sizeof(Linear*));
   for (int i = 0; i < this->n_layers; i++) {
-    
-  }  
+    this->layers[i] = new Linear((i == 0) ? IN_FEATURES : hidden_nodes[i-1], (i == this->n_layers) ? OUT_FEATURES : hidden_nodes[i], 1, (char *)"cuda");
+  }
+
+  this->activations = activations;
 }
 
-// Lattice MLP::forward() {
-//   return NULL;
-// }
+Lattice MLP::forward(Lattice x) {
+  Lattice result = x;
+  for (int i = 0; i < this->n_layers; i++) {
+    result = this->layers[i]->forward(result);
+    printf("result shape: %d x %d\n", result.shapes[0], result.shapes[1]);
+  }
+  printf("result shape: %d x %d\n", result.shapes[0], result.shapes[1]);
+  return result;
+}

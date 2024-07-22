@@ -2,6 +2,7 @@
 #define MLP_CUH
 
 #include "../lattice.cuh"
+#include "linear.cuh"
 
 enum ActivationFunction {
     RELU,
@@ -14,11 +15,12 @@ enum ActivationFunction {
 
 class MLP {
 public:
-  Lattice** weights;
+  Linear** layers;
+  ActivationFunction* activations;
   int n_layers;
- 
-
+  
   MLP(int n_hidden, int* hidden_nodes, ActivationFunction* activations); 
+  Lattice forward(Lattice x);
 };
 
 #endif /* MLP_CUH */
