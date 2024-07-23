@@ -21,6 +21,17 @@ Lattice tanh(const Lattice& input) {
   return result;
 }
 
+Lattice softmax(const Lattice& input) {
+  Lattice result = Lattice(input.shapes, input.ndim, ZERO);
+  result.send((char *)"cuda");
+  softmax_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
+
+  float result_sum = result.sum();
+  // result + 1;
+
+  return result;
+}
+
 __global__ void relu_lattice(float *input, float *output, int size) {
   int id = blockDim.x * blockIdx.x + threadIdx.x;
   if (id < size) {
@@ -42,3 +53,9 @@ __global__ void tanh_lattice(float *input, float *output, int size) {
   }
 }
 
+__global__ void softmax_lattice(float *input, float *output, int size) {
+  int id = blockDim.x * blockIdx.x + threadIdx.x;
+  if (id < size) {
+    output[id] = expf(input[id]);
+  }
+}

@@ -15,7 +15,7 @@ TARGET = feedforward
 all: $(TARGET)
 
 $(TARGET): $(OBJ_DIR)/feedforward.o $(CUDA_OBJ)
-	$(NVCC) -o $@ $^
+	$(NVCC) -g -o $@ $^
 
 $(OBJ_DIR)/feedforward.o: $(TESTS_DIR)/feedforward.cu
 	$(NVCC) -c -o $@ $<

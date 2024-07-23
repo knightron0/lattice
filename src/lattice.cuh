@@ -28,6 +28,7 @@ public:
   // a copy() function to another lattice?
 
   void T();
+  float sum();
 
   Lattice operator+(const Lattice& other) const;
   Lattice operator-(const Lattice& other) const;

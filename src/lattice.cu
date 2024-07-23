@@ -113,6 +113,20 @@ void Lattice::send(char *dest) {
   }
 }
 
+float Lattice::sum() {
+  float sum = 0.0;
+  if (strcmp(this->where, "cuda") == 0) {
+    sum_lattice<<<1, 1>>>(this->data, this->size);
+    cudaDeviceSynchronize();
+    cudaMemcpy(&sum, this->data, sizeof(float), cudaMemcpyDeviceToHost);
+  } else {
+    for (int i = 0; i < this->size; i++) {
+      sum += this->data[i];
+    }
+  }
+  return sum;
+}
+
 void Lattice::T() {
   for (int i = 0; i < (this->ndim + 1) / 2; i++) {
     int temp = this->shapes[i];
@@ -225,15 +239,16 @@ Lattice Lattice::operator*(const Lattice& other) const {
 
 template <typename T>
 Lattice operator+(const Lattice& lhs, const T& scalar) {
-  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, ZERO);
   result.send((char *)"cuda");
   add_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
   return result; 
 }
 
+
 template <typename T>
 Lattice operator-(const Lattice& lhs, const T& scalar) {
-  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, ZERO);
   result.send((char *)"cuda");
   sub_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
   return result; 
@@ -241,7 +256,7 @@ Lattice operator-(const Lattice& lhs, const T& scalar) {
 
 template <typename T>
 Lattice operator/(const Lattice& lhs, const T& scalar) {
-  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, ZERO);
   result.send((char *)"cuda");
   div_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
   return result; 
@@ -249,7 +264,7 @@ Lattice operator/(const Lattice& lhs, const T& scalar) {
 
 template <typename T>
 Lattice operator*(const Lattice& lhs, const T& scalar) {
-  Lattice result = Lattice(lhs.shapes, lhs.ndim, 0);
+  Lattice result = Lattice(lhs.shapes, lhs.ndim, ZERO);
   result.send((char *)"cuda");
   mul_scalar_lattice<<<ceil((float)lhs.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(lhs.data, (float)scalar, result.data, lhs.size);
   return result; 
@@ -275,54 +290,61 @@ Lattice Lattice::matmul(Lattice other) {
   return result;
 }
 
-// int main() {
-//   int shapes[2] = {2, 3};
-//   int ndim = 2;
-//   Lattice a = Lattice(shapes, ndim, 2);
-//   printf("Lattice a: \n");
-//   int indices[2] = {0, 0};
-//   for (int i = 0; i < shapes[0]; i++) {
-//     for (int j = 0; j < shapes[1]; j++) {
-//       indices[0] = i;
-//       indices[1] = j;
-//       printf("%f ", a.get(indices));
-//     }
-//     printf("\n");
-//   }
-//   a.T();
-//   printf("Lattice a after tranpose: \n");
-//   indices[0] = indices[1] = 0;
-//   for (int i = 0; i < shapes[0]; i++) {
-//     for (int j = 0; j < shapes[1]; j++) {
-//       indices[0] = i;
-//       indices[1] = j;
-//       printf("%f ", a.get(indices));
-//     }
-//     printf("\n");
-//   }
-//   int b_shapes[2] = {3, 2}; 
-//   Lattice b = Lattice(b_shapes, ndim, 2);
-//   printf("Lattice b: \n");
-//   for (int i = 0; i < b_shapes[0]; i++) {
-//     for (int j = 0; j < b_shapes[1]; j++) {
-//       indices[0] = i;
-//       indices[1] = j;
-//       printf("%f ", b.get(indices));
-//     }
-//     printf("\n");
-//   }
-//   a.send((char *)"cuda");
-//   b.send((char *)"cuda");
-//   Lattice c = a * b;
-//   c.send((char *)"cpu");
-//   printf("Lattice c: \n");
-//   for (int i = 0; i < shapes[0]; i++) {
-//     for (int j = 0; j < shapes[1]; j++) {
-//       indices[0] = i;
-//       indices[1] = j;
-//       printf("%f ", c.get(indices));
-//     }
-//     printf("\n");
-//   } 
-//   return 0;
-// }
+int main() {
+  int shapes[2] = {2, 3};
+  int ndim = 2;
+  Lattice a = Lattice(shapes, ndim, RANDOM);
+  printf("Lattice a: \n");
+  int indices[2] = {0, 0};
+  for (int i = 0; i < shapes[0]; i++) {
+    for (int j = 0; j < shapes[1]; j++) {
+      indices[0] = i;
+      indices[1] = j;
+      printf("%f ", a.get(indices));
+    }
+    printf("\n");
+  }
+  a = a + 1;
+  a.send((char*)"cpu");
+  printf("Lattice a: \n");
+  for (int i = 0; i < shapes[0]; i++) {
+    for (int j = 0; j < shapes[1]; j++) {
+      indices[0] = i;
+      indices[1] = j;
+      printf("%f ", a.get(indices));
+    }
+    printf("\n");
+  }
+  // a.T();
+  // printf("Lattice a after tranpose: \n");
+  // indices[0] = indices[1] = 0;
+  // for (int i = 0; i < shapes[0]; i++) {
+  //   for (int j = 0; j < shapes[1]; j++) {
+  //     indices[0] = i;
+  //     indices[1] = j;
+  //     printf("%f ", a.get(indices));
+  //   }
+  //   printf("\n");
+  // }
+  // int b_shapes[2] = {2, 3}; 
+  // for (int i = 0; i < b.shapes[0]; i++) {
+  //   for (int j = 0; j < b.shapes[1]; j++) {
+  //     indices[0] = i;
+  //     indices[1] = j;
+  //     printf("%f ", b.get(indices));
+  //   }
+  //   printf("\n");
+  // }
+  // Lattice c = a * b;
+  // c.send((char *)"cpu");
+  // printf("Lattice c: \n");
+  // for (int i = 0; i < shapes[0]; i++) {
+  //   for (int j = 0; j < shapes[1]; j++) {
+  //     indices[0] = i;
+  //     indices[1] = j;
+  //     printf("%f ", c.get(indices));
+  //   }
+  //   printf("\n");
+  // } 
+  return 0;
+}

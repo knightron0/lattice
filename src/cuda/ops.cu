@@ -96,3 +96,15 @@ __global__ void matmul_lattice(float *a, float *b, float *c, int a_rows, int a_c
   }
 }
 /* ------------------ END MATMUL KERNEL ------------------*/
+
+__global__ void sum_lattice(float *a, int size) {
+  int id = blockDim.x * blockIdx.x + threadIdx.x;
+  if (id < size) {
+    __shared__ float partialSum;
+    if (threadIdx.x == 0) partialSum = 0.0;
+    __syncthreads();
+    atomicAdd(&partialSum, a[id]);
+    __syncthreads();
+    if (threadIdx.x == 0) atomicAdd(a, partialSum);
+  }
+}

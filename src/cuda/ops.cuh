@@ -16,4 +16,6 @@ __device__ void gpu_set(float *data, int *stride, int *indices, float val, int n
 
 __global__ void matmul_lattice(float *a, float *b, float *c, int a_rows, int a_cols, int b_cols, int *a_stride, int *b_stride, int *c_stride, int a_ndim, int b_ndim, int c_ndim);
 
+__global__ void sum_lattice(float *a, int size);
+
 #endif /* OPS_CUH */
