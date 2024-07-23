@@ -1,35 +1,43 @@
 #include "activations.cuh"
+#include "ops.cuh"
+#include <stdio.h>
+
+#define THREADS_PER_BLOCK 256
 
 Lattice relu(const Lattice& input) {
   Lattice result = Lattice(input.shapes, input.ndim, ZERO);
   result.send((char *)"cuda");
-  relu_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
+  relu_lattice<<<ceil((float)input.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(input.data, result.data, input.size);
   return result;
 }
 
 Lattice sigmoid(const Lattice& input) {
   Lattice result = Lattice(input.shapes, input.ndim, ZERO);
   result.send((char *)"cuda");
-  sigmoid_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
+  sigmoid_lattice<<<ceil((float)input.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(input.data, result.data, input.size);
   return result;
 }
 
 Lattice tanh(const Lattice& input) {
   Lattice result = Lattice(input.shapes, input.ndim, ZERO);
   result.send((char *)"cuda");
-  tanh_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
+  tanh_lattice<<<ceil((float)input.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(input.data, result.data, input.size);
   return result;
 }
 
 Lattice softmax(const Lattice& input) {
+
   Lattice result = Lattice(input.shapes, input.ndim, ZERO);
   result.send((char *)"cuda");
-  softmax_lattice<<<ceil((float)input.size / (float) 256), 256>>>(input.data, result.data, input.size);
-
+  softmax_lattice<<<ceil((float)input.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(input.data, result.data, input.size);
+  result.send((char *)"cpu");
   float result_sum = result.sum();
-  // result + 1;
-
-  return result;
+  Lattice final_result = Lattice(input.shapes, input.ndim, ZERO);
+  final_result.send((char *)"cuda");
+  result.send((char *)"cuda");
+  div_scalar_lattice<<<ceil((float)result.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(result.data, result_sum, final_result.data, result.size);
+  final_result.send((char *)"cpu");
+  return final_result;
 }
 
 __global__ void relu_lattice(float *input, float *output, int size) {

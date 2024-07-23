@@ -291,7 +291,7 @@ Lattice Lattice::matmul(Lattice other) {
 }
 
 int main() {
-  int shapes[2] = {2, 3};
+  int shapes[2] = {1, 3};
   int ndim = 2;
   Lattice a = Lattice(shapes, ndim, RANDOM);
   printf("Lattice a: \n");
@@ -304,14 +304,15 @@ int main() {
     }
     printf("\n");
   }
-  a = a + 1;
-  a.send((char*)"cpu");
+  a.send((char *)"cuda");
+  Lattice b = softmax(a);
+  b.send((char *)"cpu");
   printf("Lattice a: \n");
   for (int i = 0; i < shapes[0]; i++) {
     for (int j = 0; j < shapes[1]; j++) {
       indices[0] = i;
       indices[1] = j;
-      printf("%f ", a.get(indices));
+      printf("%f ", b.get(indices));
     }
     printf("\n");
   }
