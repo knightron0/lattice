@@ -25,6 +25,7 @@ public:
   void reshape(int *new_shapes, int new_ndim); 
   void to_gpu();
   void to_cpu();
+  void show(int shape, int data);
   // a copy() function to another lattice?
 
   void T();

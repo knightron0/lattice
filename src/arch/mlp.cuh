@@ -3,15 +3,14 @@
 
 #include "../lattice.cuh"
 #include "linear.cuh"
+#include "../cuda/activations.cuh"
 
 enum ActivationFunction {
-    RELU,
-    SIGMOID,
-    TANH,
-    SOFTMAX
+    RELU = 0,
+    SIGMOID = 1,
+    TANH = 2,
+    SOFTMAX = 3
 };
-
-
 
 class MLP {
 public:

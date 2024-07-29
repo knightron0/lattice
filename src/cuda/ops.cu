@@ -4,7 +4,7 @@
 /* ------------------ START GPU UTIL FUNCTIONS ------------------*/
 __device__ float gpu_get(float *data, int *stride, int *indices, int ndim) {
   int index = 0;
-  for (int i = 0; i < 2; i++) index += indices[i] * stride[i];
+  for (int i = 0; i < ndim; i++) index += indices[i] * stride[i];
   return data[index];
 }
 
@@ -70,7 +70,10 @@ __global__ void sub_scalar_lattice(float *a, float scalar, float *c, int size) {
 
 __global__ void div_scalar_lattice(float *a, float scalar, float *c, int size) {
   int id = blockDim.x * blockIdx.x + threadIdx.x;
-  if (id < size) c[id] = a[id] / scalar;
+  if (id < size) {
+    c[id] = a[id] / scalar;
+    printf("%d %f %f %f\n", id, a[id], scalar, c[id]);
+  }
 }
 
 __global__ void mul_scalar_lattice(float *a, float scalar, float *c, int size) {

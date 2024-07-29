@@ -1,6 +1,7 @@
 #include "activations.cuh"
 #include "ops.cuh"
 #include <stdio.h>
+#include <float.h>
 
 #define THREADS_PER_BLOCK 256
 
@@ -31,8 +32,9 @@ Lattice softmax(const Lattice& input) {
   result.send((char *)"cuda");
   softmax_lattice<<<ceil((float)input.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(input.data, result.data, input.size);
   result.send((char *)"cpu");
-  float result_sum = result.sum();
-  Lattice final_result = Lattice(input.shapes, input.ndim, ZERO);
+  float result_sum = isinf(result.sum()) ? FLT_MAX : result.sum();
+  result.show(1, 1);
+  Lattice final_result = Lattice(input.shapes, input.ndim, ONES);
   final_result.send((char *)"cuda");
   result.send((char *)"cuda");
   div_scalar_lattice<<<ceil((float)result.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(result.data, result_sum, final_result.data, result.size);
@@ -64,6 +66,6 @@ __global__ void tanh_lattice(float *input, float *output, int size) {
 __global__ void softmax_lattice(float *input, float *output, int size) {
   int id = blockDim.x * blockIdx.x + threadIdx.x;
   if (id < size) {
-    output[id] = expf(input[id]);
+    output[id] = isinf(expf(input[id])) ? FLT_MAX : expf(input[id]);
   }
 }
