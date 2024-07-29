@@ -55,6 +55,19 @@ __global__ void mul_lattice(float *a, float *b, float *c, int size, int rows, in
     gpu_set(c, c_stride, indices, gpu_get(a, a_stride, indices, ndim) * gpu_get(b, b_stride, indices, ndim), ndim);
   }
 }
+
+__global__ void add_bias_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim) {
+  const int x = blockIdx.x * blockDim.x + threadIdx.x;
+  const int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (x < rows && y < cols) {
+    int indices[2] = {x, y};
+    int b_indices[2] = {x, 0};
+    float a_val = gpu_get(a, a_stride, indices, ndim) ;
+    float b_val =  gpu_get(b, b_stride, b_indices, ndim);
+    gpu_set(c, c_stride, indices, a_val + b_val, ndim);
+  }
+}
 /* ------------------ END ELEMENTWISE OP KERNELS ------------------*/
 
 /* ------------------ BEGIN SCALAR OP KERNELS ------------------*/
@@ -72,7 +85,6 @@ __global__ void div_scalar_lattice(float *a, float scalar, float *c, int size) {
   int id = blockDim.x * blockIdx.x + threadIdx.x;
   if (id < size) {
     c[id] = a[id] / scalar;
-    printf("%d %f %f %f\n", id, a[id], scalar, c[id]);
   }
 }
 

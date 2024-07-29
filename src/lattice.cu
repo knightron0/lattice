@@ -184,6 +184,20 @@ void Lattice::T() {
   }
 }
 
+Lattice Lattice::add_bias(Lattice bias) {
+  // TODO: add actual checks here i'm just trusting myself 
+  if (this->ndim != bias.ndim) {
+    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
+    exit(1);
+  }
+  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
+  result.send((char *)"cuda");
+  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
+  dim3 blockDim(32, 32, 1);
+  add_bias_lattice<<<gridDim, blockDim>>>(this->data, bias.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, bias.stride, result.stride, this->ndim);
+  return result;
+}
+
 Lattice Lattice::operator+(const Lattice& other) const {
   if (this->ndim != other.ndim || this->size != other.size) {
     fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
@@ -315,7 +329,7 @@ Lattice Lattice::matmul(Lattice other) {
 }
 
 // int main() {
-//   int shapes[2] = {1, 3};
+//   int shapes[2] = {3, 2};
 //   int ndim = 2;
 //   Lattice a = Lattice(shapes, ndim, RANDOM);
 //   printf("Lattice a: \n");
@@ -328,18 +342,42 @@ Lattice Lattice::matmul(Lattice other) {
 //     }
 //     printf("\n");
 //   }
-//   a.send((char *)"cuda");
-//   Lattice b = softmax(a);
-//   b.send((char *)"cpu");
-//   printf("Lattice a: \n");
-//   for (int i = 0; i < shapes[0]; i++) {
-//     for (int j = 0; j < shapes[1]; j++) {
+//   int b_shapes[2] = {3, 1};
+//   Lattice b = Lattice(b_shapes, ndim, RANDOM);
+//   indices[0] = indices[1] = 0;
+//   for (int i = 0; i < b_shapes[0]; i++) {
+//     for (int j = 0; j < b_shapes[1]; j++) {
 //       indices[0] = i;
 //       indices[1] = j;
 //       printf("%f ", b.get(indices));
 //     }
 //     printf("\n");
 //   }
+//   printf("Lattice C:\n");
+//   a.send((char *)"cuda");
+//   b.send((char *)"cuda");
+//   Lattice c = a.add_bias(b);
+//   c.send((char *)"cpu");
+//   for (int i = 0; i < shapes[0]; i++) {
+//     for (int j = 0; j < shapes[1]; j++) {
+//       indices[0] = i;
+//       indices[1] = j;
+//       printf("%f ", c.get(indices));
+//     }
+//     printf("\n");
+//   }
+//   // a.send((char *)"cuda");
+//   // Lattice b = softmax(a);
+//   // b.send((char *)"cpu");
+//   // printf("Lattice a: \n");
+//   // for (int i = 0; i < shapes[0]; i++) {
+//   //   for (int j = 0; j < shapes[1]; j++) {
+//   //     indices[0] = i;
+//   //     indices[1] = j;
+//   //     printf("%f ", b.get(indices));
+//   //   }
+//   //   printf("\n");
+//   // }
 //   // a.T();
 //   // printf("Lattice a after tranpose: \n");
 //   // indices[0] = indices[1] = 0;

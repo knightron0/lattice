@@ -33,7 +33,6 @@ Lattice softmax(const Lattice& input) {
   softmax_lattice<<<ceil((float)input.size / (float) THREADS_PER_BLOCK), THREADS_PER_BLOCK>>>(input.data, result.data, input.size);
   result.send((char *)"cpu");
   float result_sum = isinf(result.sum()) ? FLT_MAX : result.sum();
-  result.show(1, 1);
   Lattice final_result = Lattice(input.shapes, input.ndim, ONES);
   final_result.send((char *)"cuda");
   result.send((char *)"cuda");

@@ -15,6 +15,8 @@ enum ActivationFunction {
 class MLP {
 public:
   Linear** layers;
+  Lattice* hidden_outs;
+  Lattice* activated_outs;
   ActivationFunction* activations;
   int n_layers;
   

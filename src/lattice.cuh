@@ -30,6 +30,7 @@ public:
 
   void T();
   float sum();
+  Lattice add_bias(Lattice bias);
 
   Lattice operator+(const Lattice& other) const;
   Lattice operator-(const Lattice& other) const;

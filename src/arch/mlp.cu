@@ -19,14 +19,13 @@ MLP::MLP(int n_hidden, int* hidden_nodes, ActivationFunction* activations) {
 
 Lattice MLP::forward(Lattice x) {
   Lattice result = x;
+  this->hidden_outs = (Lattice *) malloc(this->n_layers * sizeof(Lattice));
+  this->activated_outs = (Lattice *) malloc(this->n_layers * sizeof(Lattice));
   for (int i = 0; i < this->n_layers; i++) {
     result = this->layers[i]->forward(result);
-    // result = activationFunctions[this->activations[i]](result);
-    result.show(1, 0);
+    result = activationFunctions[this->activations[i]](result);
   }
-  result.show(1, 1);
-  printf("sumL %f\n", result.sum());
-  result = softmax(result);
-  result.show(1, 1);
   return result;
 }
+
+// Lattice MLP::backward(L)

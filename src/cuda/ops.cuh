@@ -5,6 +5,7 @@ __global__ void add_lattice(float *a, float *b, float *c, int size, int rows, in
 __global__ void sub_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim);
 __global__ void div_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim);
 __global__ void mul_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim);
+__global__ void add_bias_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim);
 
 __global__ void add_scalar_lattice(float *a, float scalar, float *c, int size);
 __global__ void sub_scalar_lattice(float *a, float scalar, float *c, int size);

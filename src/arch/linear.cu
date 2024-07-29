@@ -10,7 +10,7 @@ Linear::Linear(int in_dim, int out_dim, int bias, char* where) {
   this->w = Lattice(w_shape, 2, RANDOM);
   if (this->bias) {
     int b_shape[2] = {1, out_dim};
-    this->b = Lattice(b_shape, 2, RANDOM);
+    this->b = Lattice(b_shape, 2, ZERO);
   }
 
   this->where = where;
