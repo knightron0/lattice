@@ -55,16 +55,17 @@ Lattice::Lattice(int *shapes, int ndim, Mode mode) {
 // }
 
 float Lattice::get(int *indices) {
-  // if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
-  //   printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
-  //   return 0.0f;
-  // }
+  if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
+    printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
+    return 0.0f;
+  }
   int index = 0;
   for (int i = 0; i < this->ndim; i++) index += indices[i] * this->stride[i];
   return this->data[index];
 }
 
 void Lattice::set(int *indices, float val) {
+  printf("%d %d\n", sizeof(indices), sizeof(indices[0]));
   if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
     printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
     return;
@@ -105,7 +106,7 @@ void Lattice::to_cpu() {
 }
 
 void Lattice::send(char *dest) {
-  if (dest == this->where) return;
+  if (strcmp(dest, this->where) == 0) return;
   if (strcmp(dest, "cuda") == 0) {
     this->to_gpu();
   } else {
@@ -187,8 +188,9 @@ void Lattice::T() {
 Lattice Lattice::broadcast(int *broadcast_shapes, int broadcast_ndim) {
   Lattice broadcasted_lattice = Lattice(broadcast_shapes, broadcast_ndim, ZERO);
   int* broadcast_stride = (int *)malloc(broadcast_ndim * sizeof(int));
-  broadcast_stride[broadcast_ndim - 1] = 1;
-  for (int i = broadcast_ndim - 2; i >= 0; i--) broadcast_stride[i] = broadcast_stride[i + 1] * broadcast_stride[i+1]; 
+  for (int i = 0; i < this->ndim; i++) {
+    broadcast_stride[broadcast_ndim - 1 - i] = this->stride[this->ndim - i - 1];
+  }
   for (int i = 0; i < broadcast_ndim; i++) {
     if (i >= this->ndim) {
       broadcast_stride[broadcast_ndim - 1 - i] = 0;

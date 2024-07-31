@@ -4,15 +4,15 @@
 #include "../src/lattice.cuh"
 
 int main() {
-  int shapes[2] = {1, 3};
-  int other_shapes[2] = {3, 1};
+  int shapes[2] = {3, 3};
+  int other_shapes[1] = {1};
   Lattice a = Lattice(shapes, 2, ONES);
-  Lattice b = Lattice(other_shapes, 2, ONES); 
+  Lattice b = Lattice(other_shapes, 1, ONES); 
   for (int i = 0; i < 3; i++) {
-    int a_indices[2] = {0, i};
-    int b_indices[2] = {i, 0};
-    a.set(a_indices, i + 1);
-    b.set(b_indices, i + 1);
+    for (int j = 0; j < 3; j++) {
+      int a_indices[2] = {i, j};
+      a.set(a_indices, i * 3 + j + 1);
+    }
   }
   int* res_shapes = broadcast_dim(a, b);
   Lattice a_broadcasted = a.broadcast(res_shapes, 2);
@@ -28,6 +28,7 @@ int main() {
     }
     printf("\n");
   }
+  
 
   // Linear l1 = Linear(784, 500, 1, (char *)"cuda");
   // int x_shape[2] = {10, 784};
