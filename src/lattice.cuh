@@ -31,6 +31,7 @@ public:
   void T();
   float sum();
   Lattice add_bias(Lattice bias);
+  Lattice broadcast(int *broadcast_shapes, int broadcast_ndim);
 
   Lattice operator+(const Lattice& other) const;
   Lattice operator-(const Lattice& other) const;
@@ -49,5 +50,6 @@ public:
 
 };
 
+int* broadcast_dim(Lattice a, Lattice b);
 
 #endif /* LATTICE_CUH */

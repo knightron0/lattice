@@ -55,10 +55,10 @@ Lattice::Lattice(int *shapes, int ndim, Mode mode) {
 // }
 
 float Lattice::get(int *indices) {
-  if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
-    printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
-    return 0.0f;
-  }
+  // if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
+  //   printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
+  //   return 0.0f;
+  // }
   int index = 0;
   for (int i = 0; i < this->ndim; i++) index += indices[i] * this->stride[i];
   return this->data[index];
@@ -182,6 +182,23 @@ void Lattice::T() {
       this->stride[this->ndim - 1 - i] = temp;
     }
   }
+}
+
+Lattice Lattice::broadcast(int *broadcast_shapes, int broadcast_ndim) {
+  Lattice broadcasted_lattice = Lattice(broadcast_shapes, broadcast_ndim, ZERO);
+  int* broadcast_stride = (int *)malloc(broadcast_ndim * sizeof(int));
+  broadcast_stride[broadcast_ndim - 1] = 1;
+  for (int i = broadcast_ndim - 2; i >= 0; i--) broadcast_stride[i] = broadcast_stride[i + 1] * broadcast_stride[i+1]; 
+  for (int i = 0; i < broadcast_ndim; i++) {
+    if (i >= this->ndim) {
+      broadcast_stride[broadcast_ndim - 1 - i] = 0;
+    } else if (this->shapes[this->ndim - 1 - i] != broadcast_shapes[broadcast_ndim - 1 - i]){
+      broadcast_stride[broadcast_ndim - 1 - i] = 0; 
+    }
+  }
+  broadcasted_lattice.data = this->data;
+  broadcasted_lattice.stride = broadcast_stride;
+  return broadcasted_lattice;
 }
 
 Lattice Lattice::add_bias(Lattice bias) {
@@ -326,6 +343,32 @@ Lattice Lattice::matmul(Lattice other) {
   dim3 blockDim(32, 32, 1);
   matmul_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->shapes[0], this->shapes[1], other.shapes[1], this->stride, other.stride, result.stride, this->ndim, other.ndim, result.ndim);
   return result;
+}
+
+int* broadcast_dim(Lattice a, Lattice b) {
+  int res_dim = max(a.ndim, b.ndim);
+  int* res_shapes = (int *) malloc(res_dim * sizeof(int)); 
+  for (int i = 0; i < res_dim; i++) {
+    int a_idx = a.ndim - 1 - i;
+    int b_idx = b.ndim - 1 - i;
+    if (a_idx >= 0 && b_idx >= 0) {
+      // both exist
+      if (a.shapes[a_idx] == b.shapes[b_idx]) {
+        res_shapes[i] = a.shapes[a_idx];
+      } else {
+        if (a.shapes[a_idx] != 1 && b.shapes[b_idx] != 1) {
+          fprintf(stderr, "Error: Incompatible dimensions for broadcasting.\n");
+          exit(1);
+        }
+        res_shapes[i] = max(a.shapes[a_idx], b.shapes[b_idx]);
+      }
+    } else if (a_idx >= 0 && b_idx < 0) {
+      res_shapes[i] = a.shapes[a_idx];
+    } else if (a_idx < 0 && b_idx >= 0) {
+      res_shapes[i] = b.shapes[b_idx];
+    }
+  }
+  return res_shapes;
 }
 
 // int main() {

@@ -31,7 +31,7 @@ Lattice Linear::forward(Lattice x) {
     x.send(this->where);
   }
   this->w.T();
-  Lattice result = x.matmul(this->w) + this->b;
+  Lattice result = x.matmul(this->w).add_bias(this->b);
   // printf("[%dx%d] x [%dx%d] + [%dx%d] = [%dx%d]\n", x.shapes[0], x.shapes[1], this->w.shapes[0], this->w.shapes[1], this->b.shapes[0], this->b.shapes[1], result.shapes[0], result.shapes[1]);
   this->w.T();
   return result;
