@@ -15,18 +15,18 @@ TARGET = feedforward
 all: $(TARGET)
 
 $(TARGET): $(OBJ_DIR)/feedforward.o $(CUDA_OBJ)
-  $(NVCC) -g -o $@ $^
+	$(NVCC) -g -o $@ $^
 
 $(OBJ_DIR):
-  mkdir -p $(OBJ_DIR)
+	mkdir -p $(OBJ_DIR)
 
 $(OBJ_DIR)/feedforward.o: $(TESTS_DIR)/feedforward.cu | $(OBJ_DIR)
-  mkdir -p $(dir $@)
-  $(NVCC) -c -o $@ $<
+	mkdir -p $(dir $@)
+	$(NVCC) -c -o $@ $<
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cu | $(OBJ_DIR)
-  mkdir -p $(dir $@)
-  $(NVCC) -c -o $@ $<
+	mkdir -p $(dir $@)
+	$(NVCC) -c -o $@ $<
 
 clean:
-  rm -f $(OBJ_DIR)/*.o $(OBJ_DIR)/*/*.o $(TARGET)
+	rm -f $(OBJ_DIR)/*.o $(OBJ_DIR)/*/*.o $(TARGET)
