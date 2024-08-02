@@ -326,18 +326,18 @@ int* broadcast_dim(Lattice a, Lattice b) {
     if (a_idx >= 0 && b_idx >= 0) {
       // both exist
       if (a.shapes[a_idx] == b.shapes[b_idx]) {
-        res_shapes[i] = a.shapes[a_idx];
+        res_shapes[res_dim - 1 - i] = a.shapes[a_idx];
       } else {
         if (a.shapes[a_idx] != 1 && b.shapes[b_idx] != 1) {
           fprintf(stderr, "Error: Incompatible dimensions for broadcasting.\n");
           exit(1);
         }
-        res_shapes[i] = max(a.shapes[a_idx], b.shapes[b_idx]);
+        res_shapes[res_dim - 1 - i] = max(a.shapes[a_idx], b.shapes[b_idx]);
       }
     } else if (a_idx >= 0 && b_idx < 0) {
-      res_shapes[i] = a.shapes[a_idx];
+      res_shapes[res_dim - 1 - i] = a.shapes[a_idx];
     } else if (a_idx < 0 && b_idx >= 0) {
-      res_shapes[i] = b.shapes[b_idx];
+      res_shapes[res_dim - 1 - i] = b.shapes[b_idx];
     }
   }
   return res_shapes;
