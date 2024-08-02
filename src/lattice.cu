@@ -55,10 +55,10 @@ Lattice::Lattice(int *shapes, int ndim, Mode mode) {
 // }
 
 float Lattice::get(int *indices) {
-  if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
-    printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
-    return 0.0f;
-  }
+  // if (sizeof(indices) / sizeof(indices[0]) != this->ndim) {
+  //   printf("Error: Size of indices does not match the number of dimensions in the lattice.\n");
+  //   return 0.0f;
+  // }
   int index = 0;
   for (int i = 0; i < this->ndim; i++) index += indices[i] * this->stride[i];
   return this->data[index];
@@ -203,94 +203,64 @@ Lattice Lattice::broadcast(int *broadcast_shapes, int broadcast_ndim) {
   return broadcasted_lattice;
 }
 
-Lattice Lattice::add_bias(Lattice bias) {
-  // TODO: add actual checks here i'm just trusting myself 
-  if (this->ndim != bias.ndim) {
-    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-    exit(1);
-  }
-  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
-  result.send((char *)"cuda");
-  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
-  dim3 blockDim(32, 32, 1);
-  add_bias_lattice<<<gridDim, blockDim>>>(this->data, bias.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, bias.stride, result.stride, this->ndim);
-  return result;
-}
-
 Lattice Lattice::operator+(const Lattice& other) const {
-  if (this->ndim != other.ndim || this->size != other.size) {
-    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-    exit(1);
-  }
-  for (int i = 0; i < this->ndim; i++) {
-    if (this->shapes[i] != other.shapes[i]) {
-      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-      exit(1);
-    }
-  }
-  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
+  int* result_dim = broadcast_dim(*this, other);
+  int result_ndim =  max(this->ndim, other.ndim);
+  const_cast<Lattice&>(*this).send((char *)"cpu");
+  const_cast<Lattice&>(other).send((char *)"cpu");
+  Lattice this_broadcasted = const_cast<Lattice&>(*this).broadcast(result_dim, result_ndim);
+  Lattice other_broadcasted = const_cast<Lattice&>(other).broadcast(result_dim, result_ndim);
+  this_broadcasted.send((char *)"cuda");
+  other_broadcasted.send((char *)"cuda"); 
+  Lattice result = Lattice(result_dim, result_ndim, ZERO);
   result.send((char *)"cuda");
-  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
-  dim3 blockDim(32, 32, 1);
-  add_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
+  add_lattice<<<(result.size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(this_broadcasted.data, other_broadcasted.data, result.data, result.size, this_broadcasted.stride, other_broadcasted.stride, result.stride, result_ndim);
   return result;
 }
 
 Lattice Lattice::operator-(const Lattice& other) const {
-  if (this->ndim != other.ndim || this->size != other.size) {
-    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-    exit(1);
-  }
-  for (int i = 0; i < this->ndim; i++) {
-    if (this->shapes[i] != other.shapes[i]) {
-      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-      exit(1);
-    }
-  }
-  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
+  int* result_dim = broadcast_dim(*this, other);
+  int result_ndim =  max(this->ndim, other.ndim);
+  const_cast<Lattice&>(*this).send((char *)"cpu");
+  const_cast<Lattice&>(other).send((char *)"cpu");
+  Lattice this_broadcasted = const_cast<Lattice&>(*this).broadcast(result_dim, result_ndim);
+  Lattice other_broadcasted = const_cast<Lattice&>(other).broadcast(result_dim, result_ndim);
+  this_broadcasted.send((char *)"cuda");
+  other_broadcasted.send((char *)"cuda"); 
+  Lattice result = Lattice(result_dim, result_ndim, ZERO);
   result.send((char *)"cuda");
-  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
-  dim3 blockDim(32, 32, 1);
-  sub_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
+  sub_lattice<<<(result.size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(this_broadcasted.data, other_broadcasted.data, result.data, result.size, this_broadcasted.stride, other_broadcasted.stride, result.stride, result_ndim);
   return result;
 }
 
 
 Lattice Lattice::operator/(const Lattice& other) const {
-  if (this->ndim != other.ndim || this->size != other.size) {
-    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-    exit(1);
-  }
-  for (int i = 0; i < this->ndim; i++) {
-    if (this->shapes[i] != other.shapes[i]) {
-      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-      exit(1);
-    }
-  }
-  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
+  int* result_dim = broadcast_dim(*this, other);
+  int result_ndim =  max(this->ndim, other.ndim);
+  const_cast<Lattice&>(*this).send((char *)"cpu");
+  const_cast<Lattice&>(other).send((char *)"cpu");
+  Lattice this_broadcasted = const_cast<Lattice&>(*this).broadcast(result_dim, result_ndim);
+  Lattice other_broadcasted = const_cast<Lattice&>(other).broadcast(result_dim, result_ndim);
+  this_broadcasted.send((char *)"cuda");
+  other_broadcasted.send((char *)"cuda"); 
+  Lattice result = Lattice(result_dim, result_ndim, ZERO);
   result.send((char *)"cuda");
-  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
-  dim3 blockDim(32, 32, 1);
-  div_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data,  this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
+  div_lattice<<<(result.size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(this_broadcasted.data, other_broadcasted.data, result.data, result.size, this_broadcasted.stride, other_broadcasted.stride, result.stride, result_ndim);
   return result;
 }
 
 Lattice Lattice::operator*(const Lattice& other) const {
-  if (this->ndim != other.ndim || this->size != other.size) {
-    fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-    exit(1);
-  }
-  for (int i = 0; i < this->ndim; i++) {
-    if (this->shapes[i] != other.shapes[i]) {
-      fprintf(stderr, "Error: Dimensions of lattices do not match.\n");
-      exit(1);
-    }
-  }
-  Lattice result = Lattice(this->shapes, this->ndim, ZERO);
+  int* result_dim = broadcast_dim(*this, other);
+  int result_ndim =  max(this->ndim, other.ndim);
+  const_cast<Lattice&>(*this).send((char *)"cpu");
+  const_cast<Lattice&>(other).send((char *)"cpu");
+  Lattice this_broadcasted = const_cast<Lattice&>(*this).broadcast(result_dim, result_ndim);
+  Lattice other_broadcasted = const_cast<Lattice&>(other).broadcast(result_dim, result_ndim);
+  this_broadcasted.send((char *)"cuda");
+  other_broadcasted.send((char *)"cuda"); 
+  Lattice result = Lattice(result_dim, result_ndim, ZERO);
   result.send((char *)"cuda");
-  dim3 gridDim(ceil((float) this->shapes[0] / 32), ceil((float) this->shapes[1] / 32), 1);
-  dim3 blockDim(32, 32, 1);
-  mul_lattice<<<gridDim, blockDim>>>(this->data, other.data, result.data, this->size, this->shapes[0], this->shapes[1], this->stride, other.stride, result.stride, this->ndim);
+  mul_lattice<<<(result.size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK, THREADS_PER_BLOCK>>>(this_broadcasted.data, other_broadcasted.data, result.data, result.size, this_broadcasted.stride, other_broadcasted.stride, result.stride, result_ndim);
   return result;
 }
 
@@ -455,4 +425,4 @@ int* broadcast_dim(Lattice a, Lattice b) {
 //   //   printf("\n");
 //   // } 
 //   return 0;
-// }
+// }  

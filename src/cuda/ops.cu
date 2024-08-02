@@ -16,58 +16,58 @@ __device__ void gpu_set(float *data, int *stride, int *indices, float val, int n
 /* ------------------ END GPU UTIL FUNCTIONS ------------------*/
 
 /* ------------------ START ELEMENTWISE OP KERNELS ------------------*/
-__global__ void add_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim) {
-  const int x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (x < rows && y < cols) {
-    int indices[2] = {x, y};
+__global__ void add_lattice(float *a, float *b, float *c, int size, int* a_stride, int* b_stride, int* c_stride, int ndim) {
+  const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < size) {
+    int* indices = new int[ndim];
+    int temp_idx = idx;
+    for (int i = 0; i < ndim; i++) {
+        indices[i] = temp_idx / c_stride[i];
+        temp_idx = temp_idx % c_stride[i];
+    }
     gpu_set(c, c_stride, indices, gpu_get(a, a_stride, indices, ndim) + gpu_get(b, b_stride, indices, ndim), ndim);
   }
 }
 
-__global__ void sub_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim) {
-  const int x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (x < rows && y < cols) {
-    int indices[2] = {x, y};
+__global__ void sub_lattice(float *a, float *b, float *c, int size, int* a_stride, int* b_stride, int* c_stride, int ndim) {
+  const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < size) {
+    int* indices = new int[ndim];
+    int temp_idx = idx;
+    for (int i = 0; i < ndim; i++) {
+        indices[i] = temp_idx / c_stride[i];
+        temp_idx = temp_idx % c_stride[i];
+    }
     gpu_set(c, c_stride, indices, gpu_get(a, a_stride, indices, ndim) - gpu_get(b, b_stride, indices, ndim), ndim);
   }
 }
 
-__global__ void div_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim) {
-  const int x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (x < rows && y < cols) {
-    int indices[2] = {x, y};
+__global__ void div_lattice(float *a, float *b, float *c, int size, int* a_stride, int* b_stride, int* c_stride, int ndim) {
+  const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < size) {
+    int* indices = new int[ndim];
+    int temp_idx = idx;
+    for (int i = 0; i < ndim; i++) {
+        indices[i] = temp_idx / c_stride[i];
+        temp_idx = temp_idx % c_stride[i];
+    }
     gpu_set(c, c_stride, indices, gpu_get(a, a_stride, indices, ndim) / gpu_get(b, b_stride, indices, ndim), ndim);
   }
 }
 
-__global__ void mul_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim) {
-  const int x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (x < rows && y < cols) {
-    int indices[2] = {x, y};
+__global__ void mul_lattice(float *a, float *b, float *c, int size, int* a_stride, int* b_stride, int* c_stride, int ndim) {
+  const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < size) {
+    int* indices = new int[ndim];
+    int temp_idx = idx;
+    for (int i = 0; i < ndim; i++) {
+        indices[i] = temp_idx / c_stride[i];
+        temp_idx = temp_idx % c_stride[i];
+    }
     gpu_set(c, c_stride, indices, gpu_get(a, a_stride, indices, ndim) * gpu_get(b, b_stride, indices, ndim), ndim);
   }
 }
 
-__global__ void add_bias_lattice(float *a, float *b, float *c, int size, int rows, int cols, int* a_stride, int* b_stride, int* c_stride, int ndim) {
-  const int x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (x < rows && y < cols) {
-    int indices[2] = {x, y};
-    int b_indices[2] = {x, 0};
-    float a_val = gpu_get(a, a_stride, indices, ndim) ;
-    float b_val =  gpu_get(b, b_stride, b_indices, ndim);
-    gpu_set(c, c_stride, indices, a_val + b_val, ndim);
-  }
-}
 /* ------------------ END ELEMENTWISE OP KERNELS ------------------*/
 
 /* ------------------ BEGIN SCALAR OP KERNELS ------------------*/
