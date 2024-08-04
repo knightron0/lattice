@@ -138,15 +138,27 @@ void Lattice::show(int shape, int data) {
   }
 }
 
-float Lattice::sum() {
+float Lattice::sum(int dim) {
   float sum = 0.0;
   if (strcmp(this->where, "cuda") == 0) {
-    sum_lattice<<<1, 1>>>(this->data, this->size);
+    sum_lattice<<<1, 1>>>(this->data, this->size, dim);
     cudaDeviceSynchronize();
     cudaMemcpy(&sum, this->data, sizeof(float), cudaMemcpyDeviceToHost);
   } else {
-    for (int i = 0; i < this->size; i++) {
-      sum += this->data[i];
+    if (dim < 0 || dim >= this->ndim) {
+      for (int i = 0; i < this->size; i++) {
+        sum += this->data[i];
+      }
+    } else {
+      int stride = this->stride[dim];
+      int num_elements = this->size / this->shapes[dim];
+      for (int i = 0; i < num_elements; i++) {
+        float temp_sum = 0.0;
+        for (int j = 0; j < this->shapes[dim]; j++) {
+          temp_sum += this->data[i * stride + j];
+        }
+        sum += temp_sum;
+      }
     }
   }
   return sum;
